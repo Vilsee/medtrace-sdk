@@ -6,23 +6,21 @@ export default function WarpShaderHero() {
     <div className="absolute inset-0 w-full h-full">
       <Warp
         style={{ height: "100%", width: "100%" }}
-        proportion={0.6}
-        softness={0.8}
-        distortion={0.45}
-        swirl={1.2}
-        swirlIterations={14}
+        proportion={0.45}
+        softness={1}
+        distortion={0.25}
+        swirl={0.8}
+        swirlIterations={10}
         shape="checks"
         shapeScale={0.15}
         scale={1.2}
         rotation={0}
-        speed={0.4}
+        speed={1}
         colors={[
-          "hsl(0 0% 3%)",
-          "hsl(160 90% 25%)",
-          "hsl(30 100% 45%)",
-          "hsl(0 0% 5%)",
-          "hsl(180 80% 35%)",
-          "hsl(25 95% 35%)"
+          "hsl(200, 100%, 20%)",
+          "hsl(160, 100%, 75%)",
+          "hsl(180, 90%, 30%)",
+          "hsl(170, 100%, 80%)"
         ]}
       />
     </div>
