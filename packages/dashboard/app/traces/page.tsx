@@ -116,7 +116,7 @@ export default function TracesPage() {
                     onClick={() => setExpandedTrace(expandedTrace === trace.trace_id ? null : trace.trace_id)}
                     className="cursor-pointer transition-transform active:scale-[0.99]"
                   >
-                    <TraceCard {...trace} />
+                    <TraceCard trace={trace} />
                   </div>
                   
                   {expandedTrace === trace.trace_id && (

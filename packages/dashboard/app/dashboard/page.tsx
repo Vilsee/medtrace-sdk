@@ -134,14 +134,7 @@ export default function DashboardPage() {
                 className="cursor-pointer"
               >
                 <TraceCard 
-                  trace_id={trace.trace_id.slice(0, 8) + "..."}
-                  service_name={trace.service_name}
-                  domain={trace.clinical_domain || "N/A"}
-                  risk_tier={trace.risk_tier || "low"}
-                  latency_ms={trace.latency_ms || 0}
-                  safety_gate_triggered={trace.safety_gate_triggered}
-                  start_time={trace.start_time}
-                  agent_type={trace.agent_type || "N/A"}
+                  trace={trace}
                 />
               </div>
             ))
