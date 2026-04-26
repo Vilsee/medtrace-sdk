@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { RotateCcw, Play, Copy, CheckCheck, Info, Terminal, AlertCircle } from 'lucide-react'
 import { fetchTrace } from '@/lib/api'
+import dynamic from 'next/dynamic'
+
+const PhosphorBg = dynamic(() => import('@/components/ui/phosphor-30'), { ssr: false })
 
 const DEMO_TRACE = {
   trace_id: 'demo-7f3a9b2c1d',
@@ -95,18 +98,10 @@ export default function ReplayPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* Sea-green radial gradient background */}
-      <div
-        className="fixed inset-0 z-0"
-        style={{
-          background: `
-            radial-gradient(ellipse 50% 40% at 20% 30%, hsl(25 100% 25% / 0.7) 0%, transparent 55%),
-            radial-gradient(ellipse 40% 60% at 75% 65%, hsl(163 90% 18% / 0.8) 0%, transparent 55%),
-            radial-gradient(ellipse 30% 40% at 60% 10%, hsl(200 80% 20% / 0.5) 0%, transparent 50%),
-            hsl(0 0% 2%)
-          `
-        }}
-      />
+      {/* Shader background */}
+      <div className="fixed inset-0 z-0">
+        <PhosphorBg />
+      </div>
 
       {/* Glass3d-green full-page wrapper */}
       <div

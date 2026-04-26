@@ -8,7 +8,7 @@ import { fetchSummary, fetchTraces } from '@/lib/api'
 import TraceCard from '@/components/TraceCard'
 import { InfiniteSlider } from '@/components/ui/infinite-slider'
 
-const WarpShaderHero = dynamic(() => import('@/components/ui/warp-shader'), { ssr: false })
+const PhosphorBg = dynamic(() => import('@/components/ui/phosphor-30'), { ssr: false })
 
 const TECH_LOGOS = [
   'LangChain','OpenAI','Anthropic','HuggingFace',
@@ -97,16 +97,7 @@ export default function DashboardPage() {
     <div className="relative min-h-screen">
       {/* Fixed warp shader background */}
       <div className="fixed inset-0 z-0">
-        {/* Deep dark base so shader has contrast to work with */}
-        <div className="absolute inset-0" style={{
-          background: `
-            radial-gradient(ellipse 50% 40% at 15% 25%, hsl(25 100% 30% / 0.6) 0%, transparent 55%),
-            radial-gradient(ellipse 40% 50% at 80% 60%, hsl(160 90% 20% / 0.7) 0%, transparent 55%),
-            radial-gradient(ellipse 60% 40% at 50% 90%, hsl(180 80% 15% / 0.5) 0%, transparent 50%),
-            hsl(0 0% 2%)
-          `
-        }} />
-        <WarpShaderHero />
+        <PhosphorBg />
       </div>
 
       {/* Glass3d sea overlay — covers the entire scrollable page */}
