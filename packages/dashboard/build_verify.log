@@ -1,0 +1,33 @@
+﻿
+> dashboard@0.1.0 build
+> next build
+
+  Γû▓ Next.js 14.2.35
+  - Environments: .env.production
+
+   Creating an optimized production build ...
+ Γ£ô Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/8) ...
+   Generating static pages (2/8) 
+   Generating static pages (4/8) 
+   Generating static pages (6/8) 
+ Γ£ô Generating static pages (8/8)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+Γöî Γùï /                                    3.96 kB         100 kB
+Γö£ Γùï /_not-found                          873 B          88.5 kB
+Γö£ Γùï /dashboard                           51.3 kB         157 kB
+Γö£ Γùï /replay                              593 kB          690 kB
+Γöö Γùï /traces                              3.74 kB         100 kB
++ First Load JS shared by all            87.6 kB
+  Γö£ chunks/117-cc2a46300bc24598.js       31.7 kB
+  Γö£ chunks/fd9d1056-20c850de4910c364.js  53.6 kB
+  Γöö other shared chunks (total)          2.21 kB
+
+
+Γùï  (Static)  prerendered as static content
+

@@ -1,223 +1,191 @@
-"use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+'use client'
+import { useEffect, useState, useCallback } from 'react'
+import { Search, X, Shield } from 'lucide-react'
+import { fetchTraces } from '@/lib/api'
+import TraceCard from '@/components/TraceCard'
 
-import React, { useEffect, useState, useCallback } from "react";
-import SplineScene from "@/components/SplineScene";
-import TraceCard from "@/components/TraceCard";
-import { fetchTraces, TraceSpan } from "@/lib/api";
-import { Search, X, ChevronRight, Shield, BarChart2 } from "lucide-react";
-import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+const DOMAINS = ['ALL', 'cardiology', 'oncology', 'emergency', 'general', 'mental_health', 'radiology', 'pharmacy']
+const RISK_TIERS = ['ALL', 'low', 'moderate', 'high', 'critical']
 
-// Domains from our SDK schema
-const DOMAINS = ["cardiology", "oncology", "emergency", "general", "mental_health", "radiology", "pharmacy"];
-const RISK_TIERS = ["low", "moderate", "high", "critical"];
+const RISK_COLORS: Record<string, string> = {
+  low: 'text-teal-400 bg-teal-400/10 border-teal-400/20',
+  moderate: 'text-amber-400 bg-amber-400/10 border-amber-400/20',
+  high: 'text-orange-400 bg-orange-400/10 border-orange-400/20',
+  critical: 'text-red-400 bg-red-400/10 border-red-400/20',
+}
 
 export default function TracesPage() {
-  const [traces, setTraces] = useState<TraceSpan[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [expandedTrace, setExpandedTrace] = useState<string | null>(null);
-  
-  // Filters
-  const [service, setService] = useState("");
-  const [domain, setDomain] = useState("all");
-  const [riskTier, setRiskTier] = useState("all");
-  const [limit] = useState(10);
-  const [page, setPage] = useState(1);
+  const [service, setService] = useState('')
+  const [domain, setDomain] = useState('ALL')
+  const [riskTier, setRiskTier] = useState('ALL')
+  const [traces, setTraces] = useState<any[]>([])
+  const [total, setTotal] = useState(0)
+  const [offset, setOffset] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const LIMIT = 10
 
-  const loadTraces = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async () => {
+    setLoading(true)
     try {
-      const resp = await fetchTraces({
-        service: service || undefined,
-        domain: domain === "all" ? undefined : domain,
-        risk_tier: riskTier === "all" ? undefined : riskTier,
-        limit: limit,
-      });
-      setTraces(resp.items);
-      setTotal(resp.total);
-    } catch (error) {
-      console.error("Failed to load traces:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [service, domain, riskTier, limit]);
+      const params: any = { limit: LIMIT }
+      if (service) params.service = service
+      if (domain !== 'ALL') params.domain = domain
+      if (riskTier !== 'ALL') params.risk_tier = riskTier
+      const res = await fetchTraces({ ...params, offset } as any)
+      setTraces(res.items || [])
+      setTotal(res.total || 0)
+    } catch { setTraces([]) }
+    setLoading(false)
+  }, [service, domain, riskTier, offset])
 
-  // Initial load
   useEffect(() => {
-    const timer = setTimeout(loadTraces, 400); // 400ms debounce
-    return () => clearTimeout(timer);
-  }, [loadTraces]);
+    const t = setTimeout(load, 400)
+    return () => clearTimeout(t)
+  }, [load])
 
-  const clearFilters = () => {
-    setService("");
-    setDomain("all");
-    setRiskTier("all");
-    setPage(1);
-  };
-
-  // Compute domain breakdown for the chart
-  const domainData = DOMAINS.map(d => ({
-    name: d.split("_")[0].toUpperCase(),
-    count: traces.filter(t => t.clinical_domain === d).length
-  })).filter(d => d.count > 0);
+  const riskCounts = traces.reduce((acc: any, t: any) => {
+    acc[t.risk_tier] = (acc[t.risk_tier] || 0) + 1
+    return acc
+  }, {})
 
   return (
-    <main className="min-h-screen bg-[#0A0F1C] text-white p-8">
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-8 max-w-[1600px] mx-auto">
-        
-        {/* LEFT COLUMN */}
-        <section className="space-y-6">
-          {/* 1. Filter Bar */}
-          <div className="bg-white/5 border border-white/10 p-6 rounded-3xl backdrop-blur-xl flex flex-wrap gap-4 items-end">
-            <div className="flex-1 min-w-[200px] space-y-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Service Name</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <input 
-                  type="text" 
-                  placeholder="e.g. diagnostic-engine" 
-                  value={service}
-                  onChange={(e) => setService(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition-all"
-                />
-              </div>
+    <div className="min-h-screen bg-[#020c0a] text-white">
+      <div className="grid grid-cols-[1fr_300px]">
+
+        {/* LEFT — main content */}
+        <div className="border-r border-white/10 p-8">
+          <h1 className="text-2xl font-bold mb-6">Trace Explorer</h1>
+
+          {/* Filters */}
+          <div className="flex gap-3 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+              <input
+                type="text"
+                placeholder="e.g. diagnostic-engine"
+                value={service}
+                onChange={e => { setService(e.target.value); setOffset(0) }}
+                className="w-full bg-[#0d1f1a] border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-teal-400/50"
+              />
             </div>
-            
-            <FilterSelect 
-              label="Clinical Domain" 
-              value={domain} 
-              options={["all", ...DOMAINS]} 
-              onChange={setDomain} 
-            />
-            
-            <FilterSelect 
-              label="Risk Tier" 
-              value={riskTier} 
-              options={["all", ...RISK_TIERS]} 
-              onChange={setRiskTier} 
-            />
-
-            <button 
-              onClick={clearFilters}
-              className="px-4 py-2.5 rounded-xl border border-white/5 text-slate-500 hover:text-white hover:bg-white/5 transition-all text-sm font-bold"
+            <select
+              value={domain}
+              onChange={e => { setDomain(e.target.value); setOffset(0) }}
+              className="bg-[#0d1f1a] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-teal-400/50"
             >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* 2. Results List */}
-          <div className="space-y-4">
-            {loading ? (
-              Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-44 bg-white/5 rounded-3xl animate-pulse" />)
-            ) : traces.length > 0 ? (
-              traces.map(trace => (
-                <div key={trace.id} className="space-y-2">
-                  <div 
-                    onClick={() => setExpandedTrace(expandedTrace === trace.trace_id ? null : trace.trace_id)}
-                    className="cursor-pointer transition-transform active:scale-[0.99]"
-                  >
-                    <TraceCard trace={trace} />
-                  </div>
-                  
-                  {expandedTrace === trace.trace_id && (
-                    <div className="bg-white/[0.03] border border-white/5 rounded-3xl p-6 ml-4 animate-in slide-in-from-top-2 duration-300">
-                      <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Span Execution Tree</h4>
-                      {/* Simplified Span Tree - in a real app, this would be computed by parent_span_id */}
-                      <div className="space-y-4">
-                        <SpanNode name={trace.span_name} latency={trace.latency_ms || 0} type={trace.agent_type || "N/A"} safety={trace.safety_gate_triggered} level={0} />
-                        <SpanNode name="phi_scrubber_node" latency={12} type="internal" safety={false} level={1} />
-                        <SpanNode name="clinical_logic_node" latency={245} type="reasoning" safety={trace.safety_gate_triggered} level={1} />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))
-            ) : (
-              <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-3xl">
-                <p className="text-slate-500 font-medium font-mono text-xs tracking-widest uppercase">No clinical traces found</p>
-              </div>
+              {DOMAINS.map(d => <option key={d} value={d}>{d === 'ALL' ? 'All Domains' : d}</option>)}
+            </select>
+            <select
+              value={riskTier}
+              onChange={e => { setRiskTier(e.target.value); setOffset(0) }}
+              className="bg-[#0d1f1a] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-teal-400/50"
+            >
+              {RISK_TIERS.map(r => <option key={r} value={r}>{r === 'ALL' ? 'All Risk Tiers' : r}</option>)}
+            </select>
+            {(service || domain !== 'ALL' || riskTier !== 'ALL') && (
+              <button
+                onClick={() => { setService(''); setDomain('ALL'); setRiskTier('ALL'); setOffset(0) }}
+                className="p-2.5 rounded-xl border border-white/10 hover:bg-white/5 text-white/40"
+              >
+                <X className="w-4 h-4" />
+              </button>
             )}
           </div>
 
-          {/* 3. Pagination */}
-          <div className="flex justify-between items-center bg-white/5 border border-white/10 p-4 rounded-2xl">
-             <span className="text-xs text-slate-500 font-mono">SHOWING {traces.length} OF {total} TOTAL</span>
-             <div className="flex space-x-2">
-                <button className="px-4 py-2 bg-white/5 rounded-lg text-xs font-bold text-slate-400 hover:text-white disabled:opacity-30" disabled={page === 1}>PREV</button>
-                <button className="px-4 py-2 bg-white/5 rounded-lg text-xs font-bold text-slate-400 hover:text-white" disabled={traces.length < limit}>NEXT</button>
-             </div>
-          </div>
-        </section>
-
-        {/* RIGHT COLUMN */}
-        <aside className="hidden xl:block space-y-8">
-          <SplineScene 
-            sceneUrl="https://prod.spline.design/JN450hb8wloMLhT2/scene.splinecode" 
-            className="sticky top-8 h-[480px] rounded-3xl border border-white/10"
-          />
-          
-          <div className="bg-white/5 border border-white/10 p-8 rounded-3xl space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Domain Insights</h3>
-              <BarChart2 className="w-4 h-4 text-slate-500" />
+          {/* Results */}
+          {loading ? (
+            <div className="space-y-3">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-20 rounded-2xl bg-white/5 animate-pulse" />
+              ))}
             </div>
-            
-            <div className="h-48 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={domainData.length > 0 ? domainData : [{name: 'NONE', count: 0}]}>
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#475569', fontSize: 9}} />
-                  <Tooltip 
-                    cursor={{fill: 'transparent'}}
-                    contentStyle={{backgroundColor: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '10px'}}
+          ) : traces.length === 0 ? (
+            <div className="border border-dashed border-white/10 rounded-2xl py-16 text-center">
+              <p className="text-white/30 text-sm font-mono tracking-widest uppercase">No clinical traces found</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {traces.map(trace => (
+                <div key={trace.trace_id}>
+                  <TraceCard
+                    trace={trace}
+                    expanded={expandedId === trace.trace_id}
+                    onClick={() => setExpandedId(expandedId === trace.trace_id ? null : trace.trace_id)}
                   />
-                  <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                    {domainData.map((entry, index) => (
-                      <Cell key={index} fill={index % 2 === 0 ? '#3b82f6' : '#14b8a6'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          <div className="flex items-center justify-between mt-6 pt-6 border-t border-white/10">
+            <p className="text-sm text-white/40">
+              Showing {offset + 1}–{Math.min(offset + LIMIT, total)} of {total} total
+            </p>
+            <div className="flex gap-2">
+              <button
+                disabled={offset === 0}
+                onClick={() => setOffset(Math.max(0, offset - LIMIT))}
+                className="px-4 py-2 text-sm rounded-xl border border-white/10 disabled:opacity-30 hover:bg-white/5 transition-colors"
+              >
+                Prev
+              </button>
+              <button
+                disabled={offset + LIMIT >= total}
+                onClick={() => setOffset(offset + LIMIT)}
+                className="px-4 py-2 text-sm rounded-xl border border-white/10 bg-teal-400/10 text-teal-400 disabled:opacity-30 hover:bg-teal-400/20 transition-colors"
+              >
+                Next
+              </button>
             </div>
           </div>
-        </aside>
-
-      </div>
-    </main>
-  );
-}
-
-function FilterSelect({ label, value, options, onChange }: { label: string, value: string, options: string[], onChange: (v: string) => void }) {
-  return (
-    <div className="space-y-2 lg:w-48">
-      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">{label}</label>
-      <select 
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer text-slate-300"
-      >
-        {options.map(opt => (
-          <option key={opt} value={opt} className="bg-[#0A0F1C]">{opt.replace("_", " ").toUpperCase()}</option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
-function SpanNode({ name, latency, type, safety, level }: { name: string, latency: number, type: string, safety: boolean, level: number }) {
-  return (
-    <div className="flex items-center justify-between group" style={{ marginLeft: `${level * 24}px` }}>
-      <div className="flex items-center space-x-3">
-        <div className="w-px h-10 bg-white/5 absolute -left-4" />
-        <ChevronRight className="w-3 h-3 text-slate-600" />
-        <div className="flex flex-col">
-          <span className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors uppercase tracking-tight">{name}</span>
-          <span className="text-[9px] text-slate-600 uppercase font-mono">{type}</span>
         </div>
-      </div>
-      <div className="flex items-center space-x-4">
-        {safety && <Shield className="w-3 h-3 text-amber-500" />}
-        <span className="text-[10px] font-mono text-slate-500">{latency}ms</span>
+
+        {/* RIGHT — stats sidebar (no Spline) */}
+        <div className="p-6 space-y-6 sticky top-0 h-screen overflow-y-auto">
+          <div>
+            <h3 className="text-xs text-white/40 tracking-widest uppercase mb-4">Risk distribution</h3>
+            <div className="space-y-2">
+              {Object.entries(RISK_COLORS).map(([tier, classes]) => (
+                <div key={tier} className="flex items-center justify-between">
+                  <span className={`text-xs px-2 py-1 rounded-full border ${classes} capitalize`}>{tier}</span>
+                  <span className="text-sm text-white/60">{riskCounts[tier] || 0}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="border-t border-white/10 pt-6">
+            <h3 className="text-xs text-white/40 tracking-widest uppercase mb-4">Filter summary</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-white/40">Domain</span>
+                <span className="text-teal-400">{domain}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-white/40">Risk tier</span>
+                <span className="text-teal-400">{riskTier}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-white/40">Results</span>
+                <span className="text-white">{total}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-white/10 pt-6">
+            <div className="rounded-2xl bg-teal-400/5 border border-teal-400/10 p-4">
+              <Shield className="w-5 h-5 text-teal-400 mb-2" />
+              <p className="text-xs text-white/50 leading-relaxed">
+                All traces are PHI-scrubbed before storage. Span payloads contain only hashed identifiers.
+              </p>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
-  );
+  )
 }

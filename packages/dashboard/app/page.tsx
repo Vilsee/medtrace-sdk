@@ -1,141 +1,108 @@
-"use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+'use client'
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import dynamic from 'next/dynamic'
+import { ChevronRight, Shield, GitBranch, FileCheck } from 'lucide-react'
+import { fetchSummary } from '@/lib/api'
 
-import React, { useEffect, useState } from "react";
-import Link from "next/link";
-import SplineScene from "@/components/SplineScene";
-import { fetchSummary, AuditSummary } from "@/lib/api";
-import { ArrowRight, Shield, Zap, FileText } from "lucide-react";
+const WarpShaderHero = dynamic(() => import('@/components/ui/warp-shader'), { ssr: false })
 
-export default function LandingPage() {
-  const [stats, setStats] = useState<AuditSummary | null>(null);
-  const [loading, setLoading] = useState(true);
+const features = [
+  { icon: Shield, label: 'PHI Auto-Redaction' },
+  { icon: GitBranch, label: 'LangGraph Native' },
+  { icon: FileCheck, label: 'EU AI Act Audit Trails' },
+]
+
+export default function Home() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [summary, setSummary] = useState<any>(null)
 
   useEffect(() => {
-    async function loadStats() {
-      try {
-        const data = await fetchSummary();
-        setStats(data);
-      } catch {
-        console.error("Dashboard refresh failed");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadStats();
-    const interval = setInterval(loadStats, 10000);
-    return () => clearInterval(interval);
-  }, []);
+    fetchSummary().then(setSummary).catch(() => {})
+    const interval = setInterval(() => {
+      fetchSummary().then(setSummary).catch(() => {})
+    }, 10000)
+    return () => clearInterval(interval)
+  }, [])
 
   return (
-    <div className="min-h-screen bg-[#0A0F1C] text-white relative overflow-hidden flex flex-col items-center justify-center">
-      {/* 3D Background */}
-      <SplineScene 
-        sceneUrl="https://prod.spline.design/uT2VgXg5qF7Y80Ym/scene.splinecode" 
-        className="absolute inset-0 w-full h-full" 
-        style={{ zIndex: 0 }} 
-      />
+    <div className="relative min-h-screen bg-[#020c0a] overflow-hidden">
+      {/* Warp shader background */}
+      <WarpShaderHero />
 
-      {/* Overlay Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0A0F1C]/20 via-transparent to-[#0A0F1C] z-10 pointer-events-none" />
+      {/* Dark overlay so text is readable */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#020c0a]/40 via-transparent to-[#020c0a] z-10 pointer-events-none" />
 
-      {/* Hero Content */}
-      <div className="relative z-20 flex flex-col items-center justify-center px-6 text-center max-w-4xl">
-        {/* Badge Pill */}
-        <div className="inline-flex items-center space-x-2 border border-teal-500/30 bg-teal-500/10 rounded-full px-4 py-1.5 mb-8 backdrop-blur-md">
-          <div className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-pulse" />
-          <span className="text-teal-400 text-xs font-bold uppercase tracking-widest">
-            Open Source · MIT License
-          </span>
+      {/* Hero content */}
+      <div className="relative z-20 flex flex-col items-center justify-center min-h-screen px-6 text-center pt-0">
+        {/* Badge */}
+        <div className="mb-8 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-teal-400/30 bg-teal-400/10 text-teal-300 text-sm font-medium tracking-widest uppercase">
+          <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
+          Open Source · MIT License
         </div>
 
-        {/* Headline */}
-        <h1 className="text-6xl md:text-[72px] font-black tracking-tighter leading-none mb-6 bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-blue-400">
+        {/* Title */}
+        <h1 className="text-7xl md:text-8xl font-bold mb-6 bg-gradient-to-r from-teal-300 via-cyan-200 to-teal-400 bg-clip-text text-transparent leading-none">
           MedTrace-SDK
         </h1>
 
         {/* Subtitle */}
-        <p className="text-xl md:text-2xl text-slate-400 font-medium max-w-2xl mb-12 leading-relaxed">
-          Distributed observability for healthcare AI agent pipelines. 
-          <span className="text-white"> HIPAA-aware tracing</span> that actually understands LLMs.
+        <p className="max-w-2xl text-lg md:text-xl text-white/70 mb-4 leading-relaxed">
+          Distributed observability for healthcare AI agent pipelines.{' '}
+          <span className="text-white font-semibold">HIPAA-aware tracing</span>{' '}
+          that actually understands LLMs.
         </p>
 
+        {/* Feature chips */}
+        <div className="flex flex-wrap gap-3 justify-center mb-10">
+          {features.map(({ icon: Icon, label }) => (
+            <div
+              key={label}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/60 text-sm"
+            >
+              <Icon className="w-3.5 h-3.5 text-teal-400" />
+              {label}
+            </div>
+          ))}
+        </div>
+
         {/* CTAs */}
-        <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 mb-16">
+        <div className="flex gap-4 flex-wrap justify-center">
           <Link
             href="/dashboard"
-            className="flex items-center space-x-2 bg-teal-500 hover:bg-teal-400 text-[#0A0B14] px-8 py-4 rounded-2xl font-bold transition-all transform hover:scale-105 shadow-xl shadow-teal-500/20"
+            className="flex items-center gap-2 px-7 py-3.5 rounded-full bg-teal-400 text-[#020c0a] font-semibold text-sm hover:bg-teal-300 transition-colors"
           >
-            <span>View Dashboard</span>
-            <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+            View Dashboard <ChevronRight className="w-4 h-4" />
           </Link>
-          <Link
-            href="#github"
-            className="flex items-center space-x-2 border border-white/10 bg-white/5 hover:bg-white/10 px-8 py-4 rounded-2xl font-bold transition-all backdrop-blur-md"
+          
+          <a
+            href="https://github.com/Vilsee/medtrace-sdk"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-7 py-3.5 rounded-full border border-white/20 text-white/80 text-sm hover:bg-white/10 transition-colors"
           >
-            <span>GitHub</span>
-          </Link>
-        </div>
-
-        {/* Feature Chips */}
-        <div className="flex flex-wrap items-center justify-center gap-4">
-          <FeatureChip icon={<Shield className="w-4 h-4" />} label="PHI Auto-Redaction" />
-          <FeatureChip icon={<Zap className="w-4 h-4" />} label="LangGraph Native" />
-          <FeatureChip icon={<FileText className="w-4 h-4" />} label="EU AI Act Audit Trails" />
+            GitHub ↗
+          </a>
         </div>
       </div>
 
-      {/* Floating Metrics Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 p-4">
-        <div className="max-w-5xl mx-auto bg-white/5 border-t border-x border-white/10 backdrop-blur-2xl rounded-t-3xl p-6 shadow-2xl">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <MetricItem 
-              label="Total Spans" 
-              value={stats?.total_spans} 
-              loading={loading} 
-            />
-            <MetricItem 
-              label="Safety Gates" 
-              value={stats?.safety_gates_triggered} 
-              loading={loading} 
-              color="text-yellow-400"
-            />
-            <MetricItem 
-              label="Avg Latency" 
-              value={stats ? `${stats.avg_latency_ms}ms` : null} 
-              loading={loading} 
-            />
-            <MetricItem 
-              label="PHI Scrubs" 
-              value={stats?.phi_scrubs_total} 
-              loading={loading} 
-              color="text-teal-400"
-            />
-          </div>
+      {/* Metrics bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/10 bg-[#020c0a]/80 backdrop-blur-md">
+        <div className="max-w-4xl mx-auto px-6 py-4 grid grid-cols-4 gap-6">
+          {[
+            { label: 'TOTAL SPANS', value: summary?.total_spans ?? 0, color: 'text-white' },
+            { label: 'SAFETY GATES', value: summary?.safety_gates_triggered ?? 0, color: 'text-amber-400' },
+            { label: 'AVG LATENCY', value: summary ? `${summary.avg_latency_ms}ms` : '0ms', color: 'text-white' },
+            { label: 'PHI SCRUBS', value: summary?.phi_scrubs_total ?? 0, color: 'text-teal-400' },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="text-center">
+              <p className="text-[10px] text-white/40 tracking-widest mb-1">{label}</p>
+              <p className={`text-xl font-bold ${color}`}>{value}</p>
+            </div>
+          ))}
         </div>
       </div>
     </div>
-  );
-}
-
-function FeatureChip({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <div className="flex items-center space-x-2 bg-white/5 border border-white/5 px-4 py-2 rounded-xl">
-      <div className="text-slate-500">{icon}</div>
-      <span className="text-sm font-bold text-slate-400">{label}</span>
-    </div>
-  );
-}
-
-function MetricItem({ label, value, loading, color = "text-white" }: { label: string; value: string | number | null | undefined; loading: boolean; color?: string }) {
-  return (
-    <div className="flex flex-col space-y-1">
-      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{label}</span>
-      {loading ? (
-        <div className="h-6 w-16 bg-white/5 animate-pulse rounded" />
-      ) : (
-        <span className={`text-xl font-black ${color}`}>{value ?? 0}</span>
-      )}
-    </div>
-  );
+  )
 }

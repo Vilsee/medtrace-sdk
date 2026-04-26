@@ -1,181 +1,155 @@
-"use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+'use client'
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { Activity, GitBranch, Shield, AlertTriangle, Lock, Zap } from 'lucide-react'
+import { fetchSummary, fetchTraces } from '@/lib/api'
+import TraceCard from '@/components/TraceCard'
+import { InfiniteSlider } from '@/components/ui/infinite-slider'
 
-import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import SplineScene from "@/components/SplineScene";
-import TraceCard from "@/components/TraceCard";
-import { fetchSummary, fetchTraces, fetchHealth, AuditSummary, TraceSpan } from "@/lib/api";
-import { Activity, GitBranch, Shield, AlertTriangle, Lock, Zap } from "lucide-react";
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
+const TECH_LOGOS = [
+  { name: 'LangChain', text: 'LangChain' },
+  { name: 'OpenAI', text: 'OpenAI' },
+  { name: 'Anthropic', text: 'Anthropic' },
+  { name: 'HuggingFace', text: 'HuggingFace' },
+  { name: 'LangGraph', text: 'LangGraph' },
+  { name: 'CrewAI', text: 'CrewAI' },
+  { name: 'AutoGen', text: 'AutoGen' },
+  { name: 'Presidio', text: 'Presidio' },
+]
 
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+function MetricCard({ label, value, icon: Icon, accent }: {
+  label: string; value: string | number; icon: any; accent?: string
+}) {
+  return (
+    <div className="bg-[#0d1f1a] border border-white/10 rounded-2xl p-6 flex flex-col gap-4">
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-white/5`}>
+        <Icon className={`w-5 h-5 ${accent || 'text-teal-400'}`} />
+      </div>
+      <div>
+        <p className="text-[11px] text-white/40 tracking-widest uppercase mb-1">{label}</p>
+        <p className={`text-3xl font-bold ${accent || 'text-white'}`}>{value}</p>
+      </div>
+    </div>
+  )
 }
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const [summary, setSummary] = useState<AuditSummary | null>(null);
-  const [traces, setTraces] = useState<TraceSpan[]>([]);
-  const [isHealthy, setIsHealthy] = useState(false);
-  const [loading, setLoading] = useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [summary, setSummary] = useState<any>(null)
+  const [traces, setTraces] = useState<any[]>([])
+  const [connected, setConnected] = useState(false)
+
+  const load = async () => {
+    try {
+      const [s, t] = await Promise.all([fetchSummary(), fetchTraces({ limit: 20 })])
+      setSummary(s)
+      setTraces(t.items || [])
+      setConnected(true)
+    } catch {
+      setConnected(false)
+    }
+  }
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        const [sum, tr, health] = await Promise.all([
-          fetchSummary(),
-          fetchTraces({ limit: 20 }),
-          fetchHealth().catch(() => ({ status: "down" }))
-        ]);
-        setSummary(sum);
-        setTraces(tr.items);
-        setIsHealthy(health.status === "ok");
-      } catch {
-        console.error("Dashboard refresh failed");
-        setIsHealthy(false);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadData();
-    const interval = setInterval(loadData, 8000);
-    return () => clearInterval(interval);
-  }, []);
+    load()
+    const i = setInterval(load, 8000)
+    return () => clearInterval(i)
+  }, [])
 
   return (
-    <main className="min-h-screen bg-[#0A0F1C] text-white selection:bg-blue-500/30">
-      {/* 1. Header Section */}
-      <section className="h-64 relative overflow-hidden">
-        <SplineScene 
-          sceneUrl="https://prod.spline.design/geWeD4ae7IXuSB3A/scene.splinecode" 
-          className="absolute inset-0 w-full h-full"
-          style={{ zIndex: 0 }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0F1C] via-[#0A0F1C]/20 to-transparent z-10" />
-        
-        <div className="relative z-20 h-full flex flex-col justify-center px-8">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-4xl font-black uppercase tracking-tighter">Live Dashboard</h1>
-            <div className="flex items-center space-x-2 bg-white/5 border border-white/10 px-3 py-1 rounded-full backdrop-blur-md">
-              <div className={cn("w-2 h-2 rounded-full", isHealthy ? "bg-green-500 animate-pulse" : "bg-red-500")} />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                {isHealthy ? "System Online" : "System Offline"}
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
+    <div className="min-h-screen bg-[#020c0a] text-white">
 
-      {/* 2. Metrics Grid */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-8 -mt-8 relative z-20">
-        <MetricCard 
-          label="Total Spans" 
-          value={summary?.total_spans} 
-          icon={<Activity className="w-5 h-5 text-blue-400" />} 
-          loading={loading}
-        />
-        <MetricCard 
-          label="Unique Traces" 
-          value={summary?.unique_traces} 
-          icon={<GitBranch className="w-5 h-5 text-purple-400" />} 
-          loading={loading}
-        />
-        <MetricCard 
-          label="Safety Gates" 
-          value={summary?.safety_gates_triggered} 
-          icon={<Shield className="w-5 h-5" />} 
-          color={summary?.safety_gates_triggered && summary.safety_gates_triggered > 0 ? "text-amber-500" : "text-slate-400"}
-          loading={loading}
-        />
-        <MetricCard 
-          label="High Risk Spans" 
-          value={summary?.high_risk_spans} 
-          icon={<AlertTriangle className="w-5 h-5" />} 
-          color={summary?.high_risk_spans && summary.high_risk_spans > 0 ? "text-red-500" : "text-slate-400"}
-          loading={loading}
-        />
-        <MetricCard 
-          label="PHI Scrubs" 
-          value={summary?.phi_scrubs_total} 
-          icon={<Lock className="w-5 h-5 text-teal-400" />} 
-          loading={loading}
-        />
-        <MetricCard 
-          label="Avg Latency" 
-          value={summary ? `${summary.avg_latency_ms.toFixed(0)}ms` : null} 
-          icon={<Zap className="w-5 h-5 text-yellow-400" />} 
-          loading={loading}
-        />
-      </section>
-
-      {/* 3. Trace Feed */}
-      <section className="px-8 mt-12 pb-12">
+      {/* Header with animated logo ticker */}
+      <div className="border-b border-white/10 bg-[#0a1a14] px-8 py-6">
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-3">
-            <h2 className="text-xl font-black uppercase tracking-tight">Recent Traces</h2>
-            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-ping" />
+          <div>
+            <h1 className="text-2xl font-bold text-white">Live Dashboard</h1>
+            <p className="text-sm text-white/40 mt-1">Real-time clinical AI pipeline observability</p>
           </div>
-          <button 
-            onClick={() => router.push("/traces")}
-            className="text-[10px] font-bold text-slate-500 hover:text-white transition-colors tracking-widest border-b border-slate-800"
-          >
-            VIEW ALL EXPLORER
-          </button>
+          <div className="flex items-center gap-2 text-sm">
+            <span className={`w-2 h-2 rounded-full ${connected ? 'bg-teal-400 animate-pulse' : 'bg-red-400'}`} />
+            <span className={connected ? 'text-teal-400' : 'text-red-400'}>
+              {connected ? 'Connected' : 'Server offline'}
+            </span>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
-          {traces.length > 0 ? (
-            traces.map((trace) => (
-              <div 
-                key={trace.id} 
-                onClick={() => router.push(`/traces?id=${trace.trace_id}`)}
-                className="cursor-pointer"
-              >
-                <TraceCard 
-                  trace={trace}
-                />
-              </div>
-            ))
-          ) : (
-            Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="h-44 bg-white/5 border border-white/5 rounded-2xl animate-pulse" />
-            ))
-          )}
-        </div>
-      </section>
-    </main>
-  );
-}
-
-interface MetricCardProps {
-  label: string;
-  value: string | number | null | undefined;
-  icon: React.ReactNode;
-  color?: string;
-  loading: boolean;
-}
-
-function MetricCard({ label, value, icon, color = "text-white", loading }: MetricCardProps) {
-  return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-xl relative overflow-hidden group hover:border-white/20 transition-all hover:bg-white/[0.07]">
-      <div className="flex justify-between items-start mb-4">
-        <div className="p-2 bg-white/5 rounded-xl text-slate-400 group-hover:scale-110 transition-transform">
-          {icon}
+        {/* Tech logo infinite slider */}
+        <div className="relative">
+          <p className="text-[10px] text-white/30 tracking-widest uppercase mb-3">
+            Compatible with
+          </p>
+          <div className="relative overflow-hidden">
+            <InfiniteSlider gap={48} duration={30} className="py-1">
+              {TECH_LOGOS.map((logo) => (
+                <div
+                  key={logo.name}
+                  className="px-5 py-2 rounded-full border border-white/10 bg-white/5 text-white/50 text-sm font-medium whitespace-nowrap"
+                >
+                  {logo.text}
+                </div>
+              ))}
+            </InfiniteSlider>
+            <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#0a1a14] to-transparent pointer-events-none z-10" />
+            <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-[#0a1a14] to-transparent pointer-events-none z-10" />
+          </div>
         </div>
       </div>
-      <div>
-        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{label}</span>
-        {loading ? (
-          <div className="h-8 w-24 bg-white/5 animate-pulse rounded mt-1" />
+
+      <div className="px-8 py-8">
+        {/* Metrics grid */}
+        <div className="grid grid-cols-3 gap-4 mb-10">
+          <MetricCard label="Total Spans" value={summary?.total_spans ?? 0} icon={Activity} />
+          <MetricCard label="Unique Traces" value={summary?.unique_traces ?? 0} icon={GitBranch} />
+          <MetricCard
+            label="Safety Gates"
+            value={summary?.safety_gates_triggered ?? 0}
+            icon={Shield}
+            accent={(summary?.safety_gates_triggered ?? 0) > 0 ? 'text-amber-400' : 'text-teal-400'}
+          />
+          <MetricCard
+            label="High Risk Spans"
+            value={summary?.high_risk_spans ?? 0}
+            icon={AlertTriangle}
+            accent={(summary?.high_risk_spans ?? 0) > 0 ? 'text-red-400' : 'text-teal-400'}
+          />
+          <MetricCard label="PHI Scrubs" value={summary?.phi_scrubs_total ?? 0} icon={Lock} />
+          <MetricCard
+            label="Avg Latency"
+            value={summary ? `${Math.round(summary.avg_latency_ms)}ms` : '0ms'}
+            icon={Zap}
+            accent="text-cyan-400"
+          />
+        </div>
+
+        {/* Recent traces */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-semibold">Recent Traces</h2>
+            <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
+          </div>
+          <Link href="/traces" className="text-sm text-teal-400 hover:text-teal-300 transition-colors">
+            View all explorer →
+          </Link>
+        </div>
+
+        {traces.length === 0 ? (
+          <div className="text-center py-16 text-white/30 text-sm border border-dashed border-white/10 rounded-2xl">
+            No traces yet. Instrument your first agent to see data here.
+          </div>
         ) : (
-          <h3 className={cn("text-2xl font-black mt-1 tracking-tight", color)}>
-            {value ?? 0}
-          </h3>
+          <div className="grid grid-cols-3 gap-4">
+            {traces.slice(0, 6).map((trace) => (
+              <TraceCard
+                key={trace.trace_id}
+                trace={trace}
+                onClick={() => window.location.href = `/traces?id=${trace.trace_id}`}
+              />
+            ))}
+          </div>
         )}
       </div>
-      <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-white/5 rounded-full blur-2xl group-hover:bg-blue-500/10 transition-colors" />
     </div>
-  );
+  )
 }
