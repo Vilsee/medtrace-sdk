@@ -10,6 +10,7 @@ interface SplineSceneProps {
 
 const SplineScene: React.FC<SplineSceneProps> = ({ sceneUrl, className, style }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const appRef = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
