@@ -28,7 +28,7 @@ const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost
 export default function ReplayPage() {
   const [traceId, setTraceId] = useState("");
   const [traceData, setTraceData] = useState<TraceSpan[] | null>(null);
-  const [replayOutput, setReplayOutput] = useState<any>(null);
+  const [replayOutput, setReplayOutput] = useState<Record<string, unknown> | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [isDryRun, setIsDryRun] = useState(false);
@@ -49,10 +49,11 @@ export default function ReplayPage() {
       const spans = await fetchTrace(traceId);
       setTraceData(spans);
       setStatus("idle");
-    } catch (err: any) {
-      console.error(err);
+    } catch (err: unknown) {
+      const error = err as Error;
+      console.error(error);
       setStatus("error");
-      setErrorMsg(err.message === "Failed to fetch trace" ? "Trace ID not found" : "Server unreachable");
+      setErrorMsg(error.message === "Failed to fetch trace" ? "Trace ID not found" : "Server unreachable");
     }
   }
 
@@ -82,9 +83,10 @@ export default function ReplayPage() {
         setReplayOutput(data);
       }
       setStatus("success");
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as Error;
       setStatus("error");
-      setErrorMsg(err.message);
+      setErrorMsg(error.message);
     }
   }
 

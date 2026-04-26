@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import SplineScene from "@/components/SplineScene";
 import TraceCard from "@/components/TraceCard";
 import { fetchSummary, fetchTraces, fetchHealth, AuditSummary, TraceSpan } from "@/lib/api";
-import { Activity, GitBranch, Shield, AlertTriangle, Lock, Zap, Server } from "lucide-react";
+import { Activity, GitBranch, Shield, AlertTriangle, Lock, Zap } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -31,7 +31,7 @@ export default function DashboardPage() {
         setSummary(sum);
         setTraces(tr.items);
         setIsHealthy(health.status === "ok");
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Dashboard refresh failed:", error);
         setIsHealthy(false);
       } finally {
@@ -151,7 +151,7 @@ export default function DashboardPage() {
 
 interface MetricCardProps {
   label: string;
-  value: any;
+  value: string | number | null | undefined;
   icon: React.ReactNode;
   color?: string;
   loading: boolean;

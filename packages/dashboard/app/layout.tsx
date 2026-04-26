@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Inter } from "next/font/google";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, Search, RotateCcw, Download, Shield, LayoutDashboard, Database } from "lucide-react";
+import { Search, RotateCcw, Download, Database, LayoutDashboard } from "lucide-react";
 import AuditExport from "@/components/AuditExport";
 import "@/app/globals.css";
 

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import SplineScene from "@/components/SplineScene";
 import { fetchSummary, AuditSummary } from "@/lib/api";
-import { ArrowRight, Github, Shield, Zap, FileText } from "lucide-react";
+import { ArrowRight, Shield, Zap, FileText } from "lucide-react";
 
 export default function LandingPage() {
   const [stats, setStats] = useState<AuditSummary | null>(null);
@@ -73,7 +73,6 @@ export default function LandingPage() {
             href="#github"
             className="flex items-center space-x-2 border border-white/10 bg-white/5 hover:bg-white/10 px-8 py-4 rounded-2xl font-bold transition-all backdrop-blur-md"
           >
-            <Github className="w-5 h-5" />
             <span>GitHub</span>
           </Link>
         </div>
