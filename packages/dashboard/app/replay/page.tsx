@@ -100,10 +100,11 @@ export default function ReplayPage() {
         className="fixed inset-0 z-0"
         style={{
           background: `
-            radial-gradient(ellipse 80% 60% at 20% 30%, hsl(163 80% 8%) 0%, transparent 60%),
-            radial-gradient(ellipse 60% 80% at 80% 70%, hsl(174 70% 6%) 0%, transparent 60%),
-            hsl(170 40% 3%)
-          `,
+            radial-gradient(ellipse 50% 40% at 20% 30%, hsl(25 100% 25% / 0.7) 0%, transparent 55%),
+            radial-gradient(ellipse 40% 60% at 75% 65%, hsl(163 90% 18% / 0.8) 0%, transparent 55%),
+            radial-gradient(ellipse 30% 40% at 60% 10%, hsl(200 80% 20% / 0.5) 0%, transparent 50%),
+            hsl(0 0% 2%)
+          `
         }}
       />
 
