@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 import { useEffect, useState, useCallback } from 'react'
-import { Search, X, Shield } from 'lucide-react'
+import { Search, X, Shield, BookOpen } from 'lucide-react'
 import { fetchTraces } from '@/lib/api'
 import TraceCard from '@/components/TraceCard'
 
@@ -139,6 +139,68 @@ export default function TracesPage() {
               >
                 Next
               </button>
+            </div>
+          </div>
+
+          {/* ── DEMO SECTION ── */}
+          <div className="border-t border-white/10 pt-8 mt-4">
+            <div className="flex items-center gap-2 mb-2">
+              <BookOpen className="w-4 h-4 text-teal-400" />
+              <h2 className="text-base font-semibold text-white">How tracing works</h2>
+            </div>
+            <p className="text-xs text-white/40 mb-6 leading-relaxed">
+              MedTrace-SDK captures every LangGraph agent node as a span. Each span is 
+              PHI-scrubbed before storage, enriched with clinical metadata, and queryable 
+              here in real time.
+            </p>
+
+            <div className="space-y-3">
+              {[
+                {
+                  phase: 'Ingest',
+                  color: 'text-teal-400 bg-teal-400/10 border-teal-400/20',
+                  code: 'POST /traces/ingest  ← SDK auto-calls this per span',
+                  desc: 'Spans flow in from your instrumented agent via OTLP or direct HTTP.',
+                },
+                {
+                  phase: 'Query',
+                  color: 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20',
+                  code: 'GET /traces?domain=cardiology&risk_tier=high',
+                  desc: 'Filter by service, clinical domain, and risk tier. Results update live.',
+                },
+                {
+                  phase: 'Inspect',
+                  color: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
+                  code: 'GET /traces/{trace_id}  ← click any row above',
+                  desc: 'Expand a trace to see the full span tree — parent/child relationships, latency, and safety gate outcomes.',
+                },
+              ].map((item) => (
+                <div
+                  key={item.phase}
+                  className="bg-white/5 border border-white/10 rounded-xl p-4 hover:border-teal-400/20 transition-colors"
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${item.color}`}>
+                      {item.phase}
+                    </span>
+                    <code className="text-xs text-white/50 font-mono">{item.code}</code>
+                  </div>
+                  <p className="text-xs text-white/40 leading-relaxed">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 p-4 rounded-xl bg-[#020c0a]/60 border border-white/10">
+              <p className="text-[10px] text-white/30 tracking-widest uppercase mb-2">Python SDK example</p>
+              <pre className="text-xs text-teal-300 font-mono whitespace-pre-wrap">{`from medtrace import MedTracer
+
+tracer = MedTracer(service="my-agent", domain="cardiology")
+
+@tracer.trace_agent("diagnosis", risk_tier="high")
+async def run(state):
+    # your LLM call here
+    tracer.safety_gate(triggered=False)
+    return state`}</pre>
             </div>
           </div>
         </div>

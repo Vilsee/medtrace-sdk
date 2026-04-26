@@ -1,258 +1,312 @@
-"use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+'use client'
+import { useState } from 'react'
+import { RotateCcw, Play, Copy, CheckCheck, Info, Terminal, AlertCircle } from 'lucide-react'
+import { fetchTrace } from '@/lib/api'
 
-import React, { useState, Suspense } from "react";
-import Spline from "@splinetool/react-spline/next";
-import { fetchTrace, TraceSpan } from "@/lib/api";
-import { 
-  Play, 
-  Activity, 
-  Terminal, 
-  Copy, 
-  Check, 
-  AlertCircle,
-  Database,
-  Cpu
-} from "lucide-react";
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+const DEMO_TRACE = {
+  trace_id: 'demo-7f3a9b2c1d',
+  service_name: 'cardiology-agent',
+  domain: 'cardiology',
+  risk_tier: 'high',
+  model_name: 'gpt-4o',
+  spans: [
+    { span_name: 'triage_node', latency_ms: 312, agent_type: 'triage', safety_gate_triggered: false },
+    { span_name: 'diagnosis_node', latency_ms: 1840, agent_type: 'diagnostic', safety_gate_triggered: true },
+    { span_name: 'report_node', latency_ms: 520, agent_type: 'conversational', safety_gate_triggered: false },
+  ],
 }
 
-const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8765";
+const DEMO_OUTPUT = JSON.stringify({
+  trace_id: 'demo-7f3a9b2c1d',
+  spans: DEMO_TRACE.spans,
+  replay_inputs: {
+    query: '[PHI_REDACTED] reports chest tightness and shortness of breath',
+    context: 'Emergency department intake',
+  },
+  model: 'gpt-4o',
+  dry_run: true,
+  note: 'DRY RUN — no LLM calls were made. Inputs reconstructed from stored span attributes.',
+}, null, 2)
 
 export default function ReplayPage() {
-  const [traceId, setTraceId] = useState("");
-  const [traceData, setTraceData] = useState<TraceSpan[] | null>(null);
-  const [replayOutput, setReplayOutput] = useState<Record<string, unknown> | null>(null);
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [errorMsg, setErrorMsg] = useState("");
-  const [isDryRun, setIsDryRun] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [traceId, setTraceId] = useState('')
+  const [traceData, setTraceData] = useState<any>(null)
+  const [output, setOutput] = useState<string | null>(null)
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [dryRun, setDryRun] = useState(true)
+  const [copied, setCopied] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [demoMode, setDemoMode] = useState(false)
 
-  async function loadTrace() {
-    if (!traceId.trim()) {
-      setStatus("error");
-      setErrorMsg("Please enter a valid Trace ID");
-      return;
-    }
-
-    setStatus("loading");
-    setTraceData(null);
-    setReplayOutput(null);
-    
+  const handleLoad = async () => {
+    if (!traceId.trim()) return
+    setStatus('loading')
+    setError(null)
     try {
-      const spans = await fetchTrace(traceId);
-      setTraceData(spans);
-      setStatus("idle");
-    } catch (err: unknown) {
-      const error = err as Error;
-      console.error(error);
-      setStatus("error");
-      setErrorMsg(error.message === "Failed to fetch trace" ? "Trace ID not found" : "Server unreachable");
+      const spans = await fetchTrace(traceId)
+      if (!spans || spans.length === 0) throw new Error('Trace not found')
+      setTraceData({ trace_id: traceId, spans })
+      setStatus('idle')
+    } catch (e: any) {
+      setError(e.message || 'Trace not found')
+      setStatus('error')
+      setTraceData(null)
     }
   }
 
-  async function startReplay() {
-    if (!traceId) return;
-    
-    setStatus("loading");
+  const handleReplay = async () => {
+    setStatus('loading')
+    setOutput(null)
     try {
-      if (isDryRun) {
-        // Mock dry run success
-        await new Promise(resolve => setTimeout(resolve, 800));
-        setReplayOutput({
-          status: "dry_run_success",
-          trace_id: traceId,
-          execution: "simulated",
-          reconstructed_context: {
-              model: traceData?.[0]?.model_name,
-              domain: traceData?.[0]?.clinical_domain,
-              phi_check: "passed",
-              safety_verification: true
-          }
-        });
-      } else {
-        const res = await fetch(`${NEXT_PUBLIC_API_URL}/traces/${traceId}/replay`);
-        if (!res.ok) throw new Error("Replay failed");
-        const data = await res.json();
-        setReplayOutput(data);
-      }
-      setStatus("success");
-    } catch (err: unknown) {
-      const error = err as Error;
-      setStatus("error");
-      setErrorMsg(error.message);
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8765'}/traces/${traceId}/replay`
+      )
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+      const json = await res.json()
+      setOutput(JSON.stringify({ ...json, dry_run: dryRun }, null, 2))
+      setStatus('success')
+    } catch (e: any) {
+      setError(e.message)
+      setStatus('error')
     }
+  }
+
+  const handleDemo = () => {
+    setDemoMode(true)
+    setTraceData(DEMO_TRACE)
+    setOutput(DEMO_OUTPUT)
+    setStatus('success')
+    setError(null)
   }
 
   const handleCopy = () => {
-    if (!replayOutput) return;
-    navigator.clipboard.writeText(JSON.stringify(replayOutput, null, 2));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+    if (output) navigator.clipboard.writeText(output)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const STATUS_COLORS = {
+    idle: 'text-white/40 bg-white/5 border-white/10',
+    loading: 'text-amber-400 bg-amber-400/10 border-amber-400/20',
+    success: 'text-teal-400 bg-teal-400/10 border-teal-400/20',
+    error: 'text-red-400 bg-red-400/10 border-red-400/20',
+  }
 
   return (
-    <main className="min-h-screen bg-[#0A0F1C] text-white px-8 py-10 selection:bg-teal-500/30">
-      {/* TOP: Spline Banner */}
-      <section className="h-48 w-full rounded-2xl overflow-hidden mb-8 border border-white/5 relative bg-white/[0.02]">
-        <Suspense fallback={<div className="h-48 w-full rounded-2xl bg-white/5 animate-pulse" />}>
-          <Spline scene="https://prod.spline.design/Us3kYDSFsmCuBGDH/scene.splinecode" />
-        </Suspense>
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0F1C] to-transparent pointer-events-none" />
-      </section>
+    <div className="relative min-h-screen overflow-hidden">
+      {/* Sea-green radial gradient background */}
+      <div
+        className="fixed inset-0 z-0"
+        style={{
+          background: `
+            radial-gradient(ellipse 80% 60% at 20% 30%, hsl(163 80% 8%) 0%, transparent 60%),
+            radial-gradient(ellipse 60% 80% at 80% 70%, hsl(174 70% 6%) 0%, transparent 60%),
+            hsl(170 40% 3%)
+          `,
+        }}
+      />
 
-      {/* MAIN CONTENT */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
-        
-        {/* LEFT: Input Panel */}
-        <section className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-xl h-fit">
+      {/* Glass3d-green full-page wrapper */}
+      <div
+        className="glass3d-green relative z-10 min-h-screen"
+        style={{ borderRadius: 0 }}
+      >
+        <div className="px-8 py-8 max-w-7xl mx-auto">
+
+          {/* Page header */}
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-xl font-black uppercase tracking-tight">Replay Engine</h2>
-            <div className={cn(
-              "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest",
-              status === "loading" ? "bg-blue-500/20 text-blue-400" :
-              status === "success" ? "bg-green-500/20 text-green-400" :
-              status === "error" ? "bg-red-500/20 text-red-400" : "bg-white/5 text-slate-500"
-            )}>
-              {status}
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <RotateCcw className="w-5 h-5 text-teal-400" />
+                <h1 className="text-2xl font-bold text-white">Replay Engine</h1>
+              </div>
+              <p className="text-sm text-white/40">
+                Deterministically re-execute any stored clinical agent trace for debugging and compliance.
+              </p>
             </div>
+            <button
+              onClick={handleDemo}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-teal-400/10 border border-teal-400/20 text-teal-400 text-sm hover:bg-teal-400/20 transition-colors"
+            >
+              <Play className="w-3.5 h-3.5" /> Run demo trace
+            </button>
           </div>
 
-          <div className="space-y-6">
-            {/* ID Input */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Trace Identity</label>
-              <div className="flex space-x-2">
-                <div className="relative flex-1">
-                  <Database className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <input 
-                    type="text" 
-                    placeholder="Enter Trace ID..." 
-                    value={traceId}
-                    onChange={(e) => setTraceId(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-sm focus:outline-none focus:border-teal-500 transition-all font-mono"
-                  />
-                </div>
-                <button 
-                  onClick={loadTrace}
-                  className="bg-white/5 hover:bg-white/10 px-6 py-3 rounded-xl border border-white/10 text-xs font-bold transition-all uppercase tracking-widest"
-                >
-                  Load
-                </button>
-              </div>
-            </div>
-
-            {/* Metadata (when loaded) */}
-            {traceData && (
-              <div className="grid grid-cols-2 gap-4 p-6 bg-white/5 rounded-2xl border border-white/5 animate-in fade-in zoom-in duration-500">
-                <MetaItem label="Service" value={traceData[0].service_name} icon={<Cpu className="w-3 h-3" />} />
-                <MetaItem label="Risk Tier" value={traceData[0].risk_tier} colored />
-                <MetaItem label="Model" value={traceData[0].model_name || "Unknown"} />
-                <MetaItem label="Nodes" value={traceData.length} />
-              </div>
-            )}
-
-            {/* Replay Controls */}
-            <div className="pt-4 space-y-6">
+          <div className="grid grid-cols-2 gap-6 mb-10">
+            {/* LEFT — Input panel */}
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-5">
               <div className="flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-sm font-bold text-white">Safe Execution Mode</span>
-                  <span className="text-[10px] text-slate-500">Enable dry-run for zero-side-effect simulation</span>
+                <h2 className="text-sm font-semibold text-white uppercase tracking-widest">Replay Engine</h2>
+                <span className={`text-xs px-2.5 py-1 rounded-full border font-mono uppercase ${STATUS_COLORS[status]}`}>
+                  {status}
+                </span>
+              </div>
+
+              {demoMode && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-teal-400/10 border border-teal-400/20 text-xs text-teal-300">
+                  <Info className="w-3.5 h-3.5 flex-shrink-0" />
+                  Demo mode — showing a simulated cardiology agent trace. Connect your server to replay real traces.
                 </div>
-                <button 
-                  onClick={() => setIsDryRun(!isDryRun)}
-                  className={cn(
-                    "w-12 h-6 rounded-full p-1 transition-all duration-300 relative",
-                    isDryRun ? "bg-teal-500" : "bg-white/10"
-                  )}
+              )}
+
+              <div>
+                <label className="text-[10px] text-white/40 tracking-widest uppercase block mb-2">
+                  Trace Identity
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Enter Trace ID..."
+                    value={traceId}
+                    onChange={(e) => { setTraceId(e.target.value); setDemoMode(false) }}
+                    className="flex-1 bg-[#020c0a]/60 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-teal-400/50 font-mono"
+                  />
+                  <button
+                    onClick={handleLoad}
+                    disabled={!traceId.trim() || status === 'loading'}
+                    className="px-4 py-2.5 bg-white/10 border border-white/10 rounded-xl text-sm text-white font-semibold hover:bg-white/15 disabled:opacity-40 transition-colors"
+                  >
+                    Load
+                  </button>
+                </div>
+                {error && (
+                  <div className="flex items-center gap-2 mt-2 text-xs text-red-400">
+                    <AlertCircle className="w-3.5 h-3.5" /> {error}
+                  </div>
+                )}
+              </div>
+
+              {/* Loaded trace metadata */}
+              {traceData && (
+                <div className="bg-[#020c0a]/60 border border-white/10 rounded-xl p-4 space-y-2">
+                  <p className="text-[10px] text-white/40 tracking-widest uppercase mb-3">Trace metadata</p>
+                  {[
+                    ['Service', traceData.service_name || traceData.spans?.[0]?.service_name || '—'],
+                    ['Domain', traceData.domain || traceData.spans?.[0]?.clinical_domain || '—'],
+                    ['Risk tier', traceData.risk_tier || traceData.spans?.[0]?.risk_tier || '—'],
+                    ['Spans', (traceData.spans?.length ?? 0).toString()],
+                    ['Model', traceData.model_name || traceData.spans?.[0]?.model_name || '—'],
+                  ].map(([k, v]) => (
+                    <div key={k} className="flex justify-between text-sm">
+                      <span className="text-white/40">{k}</span>
+                      <span className="text-white font-mono text-xs">{v}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Dry run toggle */}
+              <div className="flex items-center justify-between py-3 border-t border-white/10">
+                <div>
+                  <p className="text-sm text-white font-medium">Safe Execution Mode</p>
+                  <p className="text-xs text-white/40 mt-0.5">Enable dry-run for zero-side-effect simulation</p>
+                </div>
+                <button
+                  onClick={() => setDryRun(!dryRun)}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${dryRun ? 'bg-teal-400' : 'bg-white/20'}`}
                 >
-                  <div className={cn(
-                    "w-4 h-4 bg-white rounded-full shadow-lg transition-transform",
-                    isDryRun ? "translate-x-6" : "translate-x-0"
-                  )} />
+                  <span
+                    className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${dryRun ? 'translate-x-7' : 'translate-x-1'}`}
+                  />
                 </button>
               </div>
 
-              <button 
-                onClick={startReplay}
-                disabled={status === "loading" || !traceData}
-                className="w-full bg-teal-500 hover:bg-teal-400 disabled:bg-slate-800 disabled:text-slate-600 text-[#0A0B14] py-4 rounded-2xl font-black uppercase tracking-widest transition-all flex items-center justify-center space-x-3 shadow-xl shadow-teal-500/10 active:scale-[0.98]"
+              <button
+                onClick={demoMode ? () => setOutput(DEMO_OUTPUT) : handleReplay}
+                disabled={!traceData || status === 'loading'}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-teal-400 text-[#020c0a] text-sm font-bold hover:bg-teal-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                <Play className="w-5 h-5 fill-current" />
-                <span>Begin {isDryRun ? "Simulation" : "State Replay"}</span>
+                <Play className="w-4 h-4" />
+                Begin State Replay
               </button>
             </div>
 
-            {/* Errors */}
-            {status === "error" && (
-              <div className="flex items-center space-x-3 p-4 bg-red-500/10 border border-red-500/10 rounded-2xl text-red-400">
-                <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                <span className="text-sm font-medium">{errorMsg}</span>
+            {/* RIGHT — Output panel */}
+            <div className="bg-[#020c0a]/60 border border-white/10 rounded-2xl p-6 flex flex-col">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Terminal className="w-4 h-4 text-teal-400" />
+                  <h2 className="text-sm font-semibold text-white uppercase tracking-widest">Replay Output</h2>
+                </div>
+                {output && (
+                  <button
+                    onClick={handleCopy}
+                    className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white transition-colors"
+                  >
+                    {copied ? <CheckCheck className="w-3.5 h-3.5 text-teal-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copied ? 'Copied!' : 'Copy'}
+                  </button>
+                )}
               </div>
-            )}
-          </div>
-        </section>
 
-        {/* RIGHT: Output Panel */}
-        <section className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-xl relative flex flex-col h-[600px]">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center space-x-3">
-              <Terminal className="w-5 h-5 text-teal-400" />
-              <h2 className="text-xl font-black uppercase tracking-tight">Replay Output</h2>
+              {dryRun && output && (
+                <div className="mb-3 px-3 py-2 rounded-lg bg-amber-400/10 border border-amber-400/20 text-xs text-amber-300 font-mono">
+                  DRY RUN — no execution
+                </div>
+              )}
+
+              <pre className="flex-1 text-xs font-mono text-teal-300 overflow-auto min-h-[320px] leading-relaxed">
+                {output || (
+                  <span className="text-white/20 font-mono tracking-widest">
+                    WAITING FOR TRANSACTION...
+                  </span>
+                )}
+              </pre>
             </div>
-            {replayOutput && (
-              <button 
-                onClick={handleCopy}
-                className="p-2 hover:bg-white/5 rounded-lg transition-all text-slate-500 hover:text-teal-400"
-              >
-                {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-              </button>
-            )}
           </div>
 
-          {isDryRun && replayOutput && (
-            <div className="bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] font-bold uppercase tracking-widest py-2 px-4 rounded-lg mb-4 text-center">
-              DRY RUN — no execution occurred
+          {/* ── HOW REPLAY WORKS DEMO ── */}
+          <div className="border-t border-white/10 pt-8">
+            <h2 className="text-lg font-bold text-white mb-2">How trace replay works</h2>
+            <p className="text-sm text-white/40 mb-6">
+              MedTrace stores a hash of every agent input/output. Replay reconstructs the exact call 
+              without re-exposing PHI — safe for debugging, auditing, and regression testing.
+            </p>
+
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                {
+                  num: '1',
+                  title: 'Capture',
+                  desc: 'Every agent node call is captured as an OTel span with input hash, output hash, latency, and clinical metadata.',
+                  color: 'border-teal-400/20 bg-teal-400/5',
+                  accent: 'text-teal-400',
+                },
+                {
+                  num: '2',
+                  title: 'Store',
+                  desc: 'Spans are PHI-scrubbed and persisted to PostgreSQL via the MedTrace server. SHA-256 hashes ensure tamper-evidence.',
+                  color: 'border-cyan-400/20 bg-cyan-400/5',
+                  accent: 'text-cyan-400',
+                },
+                {
+                  num: '3',
+                  title: 'Replay',
+                  desc: 'The replay engine reconstructs inputs from stored attributes and re-runs the agent call at temperature=0 for determinism.',
+                  color: 'border-emerald-400/20 bg-emerald-400/5',
+                  accent: 'text-emerald-400',
+                },
+              ].map((item) => (
+                <div key={item.num} className={`border rounded-2xl p-5 ${item.color}`}>
+                  <span className={`text-2xl font-bold ${item.accent} block mb-3`}>{item.num}</span>
+                  <h3 className={`font-semibold ${item.accent} mb-2`}>{item.title}</h3>
+                  <p className="text-xs text-white/50 leading-relaxed">{item.desc}</p>
+                </div>
+              ))}
             </div>
-          )}
 
-          <div className="flex-1 bg-[#0D1117] font-mono text-sm text-green-400 rounded-xl p-6 border border-white/5 overflow-auto custom-scrollbar shadow-inner">
-            {replayOutput ? (
-              <pre className="whitespace-pre-wrap">{JSON.stringify(replayOutput, null, 2)}</pre>
-            ) : status === "loading" ? (
-              <div className="flex flex-col space-y-4 animate-pulse">
-                <div className="h-4 w-3/4 bg-white/5 rounded" />
-                <div className="h-4 w-1/2 bg-white/5 rounded" />
-                <div className="h-4 w-5/6 bg-white/5 rounded" />
-                <div className="h-4 w-2/3 bg-white/5 rounded" />
-              </div>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-slate-700 font-bold uppercase tracking-[0.2em] text-[10px]">
-                <Activity className="w-8 h-8 mb-4 opacity-10" />
-                <span>Waiting for Transaction...</span>
-              </div>
-            )}
+            <div className="mt-6 bg-[#020c0a]/60 border border-white/10 rounded-2xl p-5">
+              <p className="text-[10px] text-white/30 tracking-widest uppercase mb-3">CLI equivalent</p>
+              <pre className="text-sm font-mono text-teal-300">
+{`medtrace replay <trace_id>          # execute replay
+medtrace replay <trace_id> --dry-run # simulate only, no LLM calls
+medtrace replay <trace_id> --diff    # compare output vs stored`}
+              </pre>
+            </div>
           </div>
-        </section>
-      </div>
-    </main>
-  );
-}
-
-function MetaItem({ label, value, icon, colored }: { label: string; value: string | number | null | undefined; icon?: React.ReactNode; colored?: boolean }) {
-  const riskColor = value === "critical" ? "text-red-500" : value === "high" ? "text-orange-500" : "text-teal-400";
-  return (
-    <div className="flex flex-col space-y-1">
-      <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">{label}</span>
-      <div className="flex items-center space-x-2">
-        {icon && <div className="text-slate-600">{icon}</div>}
-        <span className={cn("text-xs font-bold font-mono tracking-tight", colored ? riskColor : "text-white")}>
-          {value}
-        </span>
+        </div>
       </div>
     </div>
-  );
+  )
 }
