@@ -127,7 +127,7 @@ function FeatureChip({ icon, label }: { icon: React.ReactNode; label: string }) 
   );
 }
 
-function MetricItem({ label, value, loading, color = "text-white" }: { label: string; value: any; loading: boolean; color?: string }) {
+function MetricItem({ label, value, loading, color = "text-white" }: { label: string; value: string | number | null | undefined; loading: boolean; color?: string }) {
   return (
     <div className="flex flex-col space-y-1">
       <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{label}</span>

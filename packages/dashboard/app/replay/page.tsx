@@ -5,9 +5,7 @@ import Spline from "@splinetool/react-spline/next";
 import { fetchTrace, TraceSpan } from "@/lib/api";
 import { 
   Play, 
-  Search, 
   Activity, 
-  Shield, 
   Lock, 
   Terminal, 
   Copy, 

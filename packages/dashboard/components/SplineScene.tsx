@@ -13,6 +13,7 @@ const SplineScene: React.FC<SplineSceneProps> = ({ sceneUrl, className, style })
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let app: any = null;
 
     async function initSpline() {

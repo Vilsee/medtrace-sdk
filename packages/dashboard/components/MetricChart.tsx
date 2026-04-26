@@ -12,7 +12,7 @@ import {
 } from "recharts";
 
 interface MetricChartProps {
-  data: any[];
+  data: Record<string, string | number>[];
   title: string;
   dataKey: string;
   color?: string;
