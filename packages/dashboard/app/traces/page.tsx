@@ -4,8 +4,8 @@ import React, { useEffect, useState, useCallback } from "react";
 import SplineScene from "@/components/SplineScene";
 import TraceCard from "@/components/TraceCard";
 import { fetchTraces, TraceSpan } from "@/lib/api";
-import { Search, X, ChevronRight, ChevronDown, Shield, BarChart2 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { Search, X, ChevronRight, Shield, BarChart2 } from "lucide-react";
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 // Domains from our SDK schema
 const DOMAINS = ["cardiology", "oncology", "emergency", "general", "mental_health", "radiology", "pharmacy"];
@@ -40,7 +40,7 @@ export default function TracesPage() {
     } finally {
       setLoading(false);
     }
-  }, [service, domain, riskTier, limit, page]);
+  }, [service, domain, riskTier, limit]);
 
   // Initial load
   useEffect(() => {

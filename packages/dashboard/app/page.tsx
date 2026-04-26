@@ -15,8 +15,8 @@ export default function LandingPage() {
       try {
         const data = await fetchSummary();
         setStats(data);
-      } catch (error) {
-        console.error("Failed to load hero stats:", error);
+      } catch {
+        console.error("Dashboard refresh failed");
       } finally {
         setLoading(false);
       }

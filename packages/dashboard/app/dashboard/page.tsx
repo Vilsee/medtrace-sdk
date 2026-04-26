@@ -31,8 +31,8 @@ export default function DashboardPage() {
         setSummary(sum);
         setTraces(tr.items);
         setIsHealthy(health.status === "ok");
-      } catch (_error: unknown) {
-        console.error("Dashboard refresh failed:", _error);
+      } catch {
+        console.error("Dashboard refresh failed");
         setIsHealthy(false);
       } finally {
         setLoading(false);

@@ -34,7 +34,7 @@ export default function AuditExport() {
 
       setStatus("success");
       setMessage(`Archive downloaded successfully.`);
-    } catch (error) {
+    } catch {
       setStatus("error");
       setMessage("Failed to generate export. Check server connection.");
     }

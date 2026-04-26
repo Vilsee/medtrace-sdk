@@ -6,7 +6,6 @@ import { fetchTrace, TraceSpan } from "@/lib/api";
 import { 
   Play, 
   Activity, 
-  Lock, 
   Terminal, 
   Copy, 
   Check, 
@@ -243,7 +242,7 @@ export default function ReplayPage() {
   );
 }
 
-function MetaItem({ label, value, icon, colored }: { label: string; value: any; icon?: React.ReactNode; colored?: boolean }) {
+function MetaItem({ label, value, icon, colored }: { label: string; value: string | number | null | undefined; icon?: React.ReactNode; colored?: boolean }) {
   const riskColor = value === "critical" ? "text-red-500" : value === "high" ? "text-orange-500" : "text-teal-400";
   return (
     <div className="flex flex-col space-y-1">

@@ -67,7 +67,7 @@ export async function fetchTrace(traceId: string): Promise<TraceSpan[]> {
   return res.json();
 }
 
-export async function fetchAuditSummary(): Promise<any> {
+export async function fetchAuditSummary(): Promise<AuditSummary> {
     // This is essentially redundant with fetchSummary but included for completeness
     return fetchSummary();
 }
