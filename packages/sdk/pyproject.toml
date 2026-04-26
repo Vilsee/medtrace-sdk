@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "medtrace-sdk"
+version = "0.1.0-alpha"
+description = "Distributed observability SDK for healthcare AI agent pipelines"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+readme = "README.md"
+
+dependencies = [
+    "opentelemetry-sdk>=1.24.0",
+    "opentelemetry-exporter-otlp>=1.24.0",
+    "presidio-analyzer>=2.2.0",
+    "presidio-anonymizer>=2.2.0",
+    "langchain-core>=0.2.0",
+    "typer[all]>=0.12.0",
+    "pydantic>=2.0.0",
+    "httpx>=0.27.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.scripts]
+medtrace = "medtrace.cli:app"
+
+[tool.setuptools.packages.find]
+include = ["medtrace*"]
