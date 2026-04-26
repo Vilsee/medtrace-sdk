@@ -29,7 +29,9 @@ export default function Home() {
   return (
     <div className="relative min-h-screen bg-[#020c0a] overflow-hidden">
       {/* Warp shader background */}
-      <WarpShaderHero />
+      <div className="absolute inset-0 w-full h-full">
+        <WarpShaderHero />
+      </div>
 
       {/* Dark overlay so text is readable */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#020c0a]/40 via-transparent to-[#020c0a] z-10 pointer-events-none" />
