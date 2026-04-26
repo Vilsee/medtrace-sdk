@@ -10,12 +10,10 @@ interface SplineSceneProps {
 
 const SplineScene: React.FC<SplineSceneProps> = ({ sceneUrl, className, style }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const appRef = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let app: any = null;
-
     async function initSpline() {
       if (!canvasRef.current) return;
 
@@ -23,14 +21,14 @@ const SplineScene: React.FC<SplineSceneProps> = ({ sceneUrl, className, style })
         // Dynamic import to avoid SSR crashes
         const { Application } = await import("@splinetool/runtime");
         
-        app = new Application(canvasRef.current);
+        appRef.current = new Application(canvasRef.current);
         
         // Listen for the load event to hide the skeleton
-        app.addEventListener("load", () => {
+        appRef.current.addEventListener("load", () => {
           setIsLoading(false);
         });
 
-        await app.load(sceneUrl);
+        await appRef.current.load(sceneUrl);
       } catch (error) {
         console.error("Failed to load Spline scene:", error);
         setIsLoading(false);
@@ -40,8 +38,8 @@ const SplineScene: React.FC<SplineSceneProps> = ({ sceneUrl, className, style })
     initSpline();
 
     return () => {
-      if (app && typeof app.dispose === "function") {
-        app.dispose();
+      if (appRef.current && typeof appRef.current.dispose === "function") {
+        appRef.current.dispose();
       }
     };
   }, [sceneUrl]);

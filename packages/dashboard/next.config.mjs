@@ -1,11 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  typescript: {
-    ignoreBuildErrors: true,
+  output: 'standalone',
+  images: {
+    remotePatterns: [],
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  transpilePackages: ['@splinetool/react-spline', '@splinetool/runtime'],
 };
 
 export default nextConfig;
