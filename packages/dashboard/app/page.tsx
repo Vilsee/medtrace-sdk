@@ -29,9 +29,7 @@ export default function Home() {
   return (
     <div className="relative min-h-screen bg-[#020c0a] overflow-hidden">
       {/* Warp shader background */}
-      <div className="absolute inset-0 w-full h-full">
-        <WarpShaderHero />
-      </div>
+      <WarpShaderHero />
 
       {/* Dark overlay so text is readable */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#020c0a]/40 via-transparent to-[#020c0a] z-10 pointer-events-none" />
@@ -90,47 +88,19 @@ export default function Home() {
       </div>
 
       {/* Metrics bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/10 bg-[#020c0a]/90 backdrop-blur-md">
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/10 bg-[#020c0a]/80 backdrop-blur-md">
         <div className="max-w-4xl mx-auto px-6 py-4 grid grid-cols-4 gap-6">
           {[
-            {
-              label: 'TOTAL SPANS',
-              value: summary?.total_spans ?? '12,847',
-              color: 'text-white',
-              demo: !summary
-            },
-            {
-              label: 'SAFETY GATES',
-              value: summary?.safety_gates_triggered ?? '143',
-              color: 'text-amber-400',
-              demo: !summary
-            },
-            {
-              label: 'AVG LATENCY',
-              value: summary ? `${summary.avg_latency_ms}ms` : '284ms',
-              color: 'text-white',
-              demo: !summary
-            },
-            {
-              label: 'PHI SCRUBS',
-              value: summary?.phi_scrubs_total ?? '9,302',
-              color: 'text-teal-400',
-              demo: !summary
-            },
-          ].map(({ label, value, color, demo }) => (
+            { label: 'TOTAL SPANS', value: summary?.total_spans ?? 0, color: 'text-white' },
+            { label: 'SAFETY GATES', value: summary?.safety_gates_triggered ?? 0, color: 'text-amber-400' },
+            { label: 'AVG LATENCY', value: summary ? `${summary.avg_latency_ms}ms` : '0ms', color: 'text-white' },
+            { label: 'PHI SCRUBS', value: summary?.phi_scrubs_total ?? 0, color: 'text-teal-400' },
+          ].map(({ label, value, color }) => (
             <div key={label} className="text-center">
-              <p className="text-[10px] text-white/40 tracking-widest mb-1">
-                {label}
-                {demo && <span className="ml-1 text-white/20">(demo)</span>}
-              </p>
+              <p className="text-[10px] text-white/40 tracking-widest mb-1">{label}</p>
               <p className={`text-xl font-bold ${color}`}>{value}</p>
             </div>
           ))}
-        </div>
-        <div className="text-center pb-2">
-          <p className="text-[9px] text-white/20 tracking-widest">
-            {summary ? 'LIVE DATA' : 'DEMO VALUES — connect your server to see live metrics'}
-          </p>
         </div>
       </div>
     </div>

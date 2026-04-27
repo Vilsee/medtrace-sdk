@@ -3,9 +3,6 @@
 import { useState } from 'react'
 import { RotateCcw, Play, Copy, CheckCheck, Info, Terminal, AlertCircle } from 'lucide-react'
 import { fetchTrace } from '@/lib/api'
-import dynamic from 'next/dynamic'
-
-const PhosphorBg = dynamic(() => import('@/components/ui/phosphor-30'), { ssr: false })
 
 const DEMO_TRACE = {
   trace_id: 'demo-7f3a9b2c1d',
@@ -41,8 +38,6 @@ export default function ReplayPage() {
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [demoMode, setDemoMode] = useState(false)
-  const [demoRunning, setDemoRunning] = useState(false)
-  const [demoLines, setDemoLines] = useState<string[]>([])
 
   const handleLoad = async () => {
     if (!traceId.trim()) return
@@ -77,52 +72,12 @@ export default function ReplayPage() {
     }
   }
 
-  const handleDemo = async () => {
+  const handleDemo = () => {
     setDemoMode(true)
-    setDemoRunning(true)
-    setDemoLines([])
-    setStatus('loading')
-    setOutput(null)
-    setError(null)
-
-    const steps = [
-      '> Loading trace: demo-7f3a9b2c1d...',
-      '> Service: cardiology-agent | Domain: cardiology | Risk: HIGH',
-      '> Reconstructing 3 spans from stored attributes...',
-      '',
-      '  [span 1/3] triage_node',
-      '    agent_type: triage | latency: 312ms',
-      '    phi_scrub_count: 2 | safety_gate: false',
-      '    input_hash: sha256:a4f8e2... ✓',
-      '',
-      '  [span 2/3] diagnosis_node',
-      '    agent_type: diagnostic | latency: 1840ms',
-      '    phi_scrub_count: 1 | safety_gate: TRUE ⚠',
-      '    input_hash: sha256:b7c3d1... ✓',
-      '',
-      '  [span 3/3] report_node',
-      '    agent_type: conversational | latency: 520ms',
-      '    phi_scrub_count: 0 | safety_gate: false',
-      '    input_hash: sha256:e9a2f4... ✓',
-      '',
-      '> PHI check: [PATIENT_NAME] → [PHI_REDACTED]',
-      '> PHI check: [DATE_OF_BIRTH] → [PHI_REDACTED]',
-      '> PHI check: [MRN_12847] → [PHI_REDACTED]',
-      '',
-      '> Integrity verification: PASSED ✓',
-      '> DRY RUN — no LLM calls executed',
-      '> Replay complete in 47ms',
-    ]
-
-    for (let i = 0; i < steps.length; i++) {
-      await new Promise(r => setTimeout(r, 80 + Math.random() * 60))
-      setDemoLines(prev => [...prev, steps[i]])
-    }
-
-    setStatus('success')
-    setDemoRunning(false)
     setTraceData(DEMO_TRACE)
     setOutput(DEMO_OUTPUT)
+    setStatus('success')
+    setError(null)
   }
 
   const handleCopy = () => {
@@ -140,10 +95,18 @@ export default function ReplayPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* Shader background */}
-      <div className="fixed inset-0 z-0">
-        <PhosphorBg />
-      </div>
+      {/* Sea-green radial gradient background */}
+      <div
+        className="fixed inset-0 z-0"
+        style={{
+          background: `
+            radial-gradient(ellipse 50% 40% at 20% 30%, hsl(25 100% 25% / 0.7) 0%, transparent 55%),
+            radial-gradient(ellipse 40% 60% at 75% 65%, hsl(163 90% 18% / 0.8) 0%, transparent 55%),
+            radial-gradient(ellipse 30% 40% at 60% 10%, hsl(200 80% 20% / 0.5) 0%, transparent 50%),
+            hsl(0 0% 2%)
+          `
+        }}
+      />
 
       {/* Glass3d-green full-page wrapper */}
       <div
@@ -165,19 +128,15 @@ export default function ReplayPage() {
             </div>
             <button
               onClick={handleDemo}
-              disabled={demoRunning}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-teal-400/10 border border-teal-400/20 text-teal-400 text-sm hover:bg-teal-400/20 disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-teal-400/10 border border-teal-400/20 text-teal-400 text-sm hover:bg-teal-400/20 transition-colors"
             >
-              {demoRunning
-                ? <><span className="w-3 h-3 rounded-full border-2 border-teal-400 border-t-transparent animate-spin" /> Running...</>
-                : <><Play className="w-3.5 h-3.5" /> Run demo trace</>
-              }
+              <Play className="w-3.5 h-3.5" /> Run demo trace
             </button>
           </div>
 
           <div className="grid grid-cols-2 gap-6 mb-10">
             {/* LEFT — Input panel */}
-            <div className="bg-[#020c0a]/90 border border-teal-400/20 rounded-2xl p-6 space-y-5 backdrop-blur-md">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-5">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-white uppercase tracking-widest">Replay Engine</h2>
                 <span className={`text-xs px-2.5 py-1 rounded-full border font-mono uppercase ${STATUS_COLORS[status]}`}>
@@ -265,7 +224,7 @@ export default function ReplayPage() {
             </div>
 
             {/* RIGHT — Output panel */}
-            <div className="bg-[#020c0a]/90 border border-teal-400/15 rounded-2xl p-6 flex flex-col backdrop-blur-md">
+            <div className="bg-[#020c0a]/60 border border-white/10 rounded-2xl p-6 flex flex-col">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Terminal className="w-4 h-4 text-teal-400" />
@@ -288,29 +247,8 @@ export default function ReplayPage() {
                 </div>
               )}
 
-              <pre className="flex-1 text-xs font-mono overflow-auto min-h-[320px] leading-relaxed">
-                {demoRunning ? (
-                  <div className="space-y-0.5">
-                    {demoLines.map((line, i) => (
-                      <div
-                        key={i}
-                        className={`${
-                          line.includes('⚠') ? 'text-amber-400' :
-                          line.includes('✓') ? 'text-teal-400' :
-                          line.includes('PHI_REDACTED') ? 'text-red-400' :
-                          line.includes('[span') ? 'text-cyan-300 font-semibold' :
-                          line.startsWith('>') ? 'text-white/80' :
-                          'text-white/50'
-                        }`}
-                      >
-                        {line || '\u00A0'}
-                      </div>
-                    ))}
-                    <div className="text-teal-400 animate-pulse">█</div>
-                  </div>
-                ) : output ? (
-                  <span className="text-teal-300">{output}</span>
-                ) : (
+              <pre className="flex-1 text-xs font-mono text-teal-300 overflow-auto min-h-[320px] leading-relaxed">
+                {output || (
                   <span className="text-white/20 font-mono tracking-widest">
                     WAITING FOR TRANSACTION...
                   </span>
@@ -351,7 +289,7 @@ export default function ReplayPage() {
                   accent: 'text-emerald-400',
                 },
               ].map((item) => (
-                <div key={item.num} className={`border rounded-2xl p-5 backdrop-blur-md bg-[#020c0a]/80 ${item.color}`}>
+                <div key={item.num} className={`border rounded-2xl p-5 ${item.color}`}>
                   <span className={`text-2xl font-bold ${item.accent} block mb-3`}>{item.num}</span>
                   <h3 className={`font-semibold ${item.accent} mb-2`}>{item.title}</h3>
                   <p className="text-xs text-white/50 leading-relaxed">{item.desc}</p>

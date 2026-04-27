@@ -16,14 +16,7 @@ app = FastAPI(
 # CORS configuration for local development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "https://dashboard-oxtsnd3zc-vilsees-projects.vercel.app",
-        "https://dashboard-m7t4ytck4-vilsees-projects.vercel.app",
-        "https://dashboard-hrz23f2gb-vilsees-projects.vercel.app",
-        "https://dashboard-5cuphxz0x-vilsees-projects.vercel.app",
-        "https://dashboard-taupe-five-15.vercel.app",
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
