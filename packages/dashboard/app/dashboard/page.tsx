@@ -15,48 +15,12 @@ const TECH_LOGOS = [
   'LangGraph','CrewAI','AutoGen','Presidio',
 ]
 
-const DEMO_STEPS = [
-  {
-    step: '01',
-    title: 'Install the SDK',
-    code: 'pip install medtrace-sdk',
-    description: 'Zero-dependency install. Works with any Python 3.10+ environment.',
-  },
-  {
-    step: '02',
-    title: 'Instrument your agent',
-    code: `from medtrace import MedTracer
-
-tracer = MedTracer(
-  service="my-clinical-agent",
-  domain="cardiology"
-)
-graph = tracer.instrument_graph(my_langgraph_app)`,
-    description: 'Two lines. Your entire LangGraph agent is now traced, PHI-scrubbed, and auditable.',
-  },
-  {
-    step: '03',
-    title: 'Add safety gates',
-    code: `@tracer.trace_agent("diagnosis", risk_tier="high")
-async def diagnose(state):
-    result = await llm.ainvoke(prompt)
-    tracer.safety_gate(triggered=False)
-    return result`,
-    description: 'Decorate agent nodes to capture clinical metadata and safety decisions per span.',
-  },
-  {
-    step: '04',
-    title: 'Export audit trail',
-    code: 'medtrace export --start 2026-01-01 --end 2026-03-31',
-    description: 'One CLI command generates a NDJSON audit archive with SHA-256 integrity hashes for EU AI Act compliance.',
-  },
-]
 
 function MetricCard({ label, value, icon: Icon, accent }: {
   label: string; value: string | number; icon: any; accent?: string
 }) {
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col gap-4 backdrop-blur-sm">
+    <div className="bg-[#020c0a]/80 border border-teal-400/20 rounded-2xl p-6 flex flex-col gap-4 backdrop-blur-md ring-1 ring-white/5">
       <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white/5">
         <Icon className={`w-5 h-5 ${accent || 'text-teal-400'}`} />
       </div>
@@ -193,37 +157,72 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* ── DEMO SECTION ── */}
+          {/* ── INTERACTIVE DEMO ── */}
           <div className="border-t border-white/10 pt-10 mb-10">
             <div className="flex items-center gap-3 mb-2">
               <Terminal className="w-5 h-5 text-teal-400" />
-              <h2 className="text-xl font-bold text-white">How it works</h2>
+              <h2 className="text-xl font-bold text-white">Quick start</h2>
             </div>
-            <p className="text-white/40 text-sm mb-8">
-              From zero to fully-traced clinical AI pipeline in 4 steps.
+            <p className="text-white/40 text-sm mb-6">
+              Copy and paste — your agent is traced in under 2 minutes.
             </p>
 
-            <div className="grid grid-cols-2 gap-6">
-              {DEMO_STEPS.map((s) => (
+            <div className="bg-[#020c0a]/90 border border-teal-400/20 rounded-2xl overflow-hidden backdrop-blur-md">
+              {/* Tab bar */}
+              <div className="flex border-b border-white/10">
+                {['Install', 'Instrument', 'Safety gate', 'Export'].map((tab, i) => (
+                  <button
+                    key={tab}
+                    id={`demo-tab-${i}`}
+                    onClick={() => {
+                      document.querySelectorAll('[id^="demo-panel-"]').forEach(el => (el as HTMLElement).style.display = 'none')
+                      document.querySelectorAll('[id^="demo-tab-"]').forEach(el => el.classList.remove('border-b-2', 'border-teal-400', 'text-white'))
+                      const panel = document.getElementById(`demo-panel-${i}`)
+                      const tabEl = document.getElementById(`demo-tab-${i}`)
+                      if (panel) (panel as HTMLElement).style.display = 'block'
+                      if (tabEl) { tabEl.classList.add('border-b-2', 'border-teal-400', 'text-white') }
+                    }}
+                    className={`px-5 py-3 text-xs font-mono text-white/40 hover:text-white transition-colors ${i === 0 ? 'border-b-2 border-teal-400 text-white' : ''}`}
+                  >
+                    {String(i + 1).padStart(2, '0')} {tab}
+                  </button>
+                ))}
+              </div>
+
+              {/* Panels */}
+              {[
+                {
+                  code: `pip install medtrace-sdk`,
+                  desc: 'Zero extra dependencies. Python 3.10+ required.'
+                },
+                {
+                  code: `from medtrace import MedTracer\n\ntracer = MedTracer(\n  service="my-clinical-agent",\n  domain="cardiology"\n)\n\n# Wraps your entire LangGraph app — 1 line\ngraph = tracer.instrument_graph(my_langgraph_app)`,
+                  desc: 'Every agent node is now traced, PHI-scrubbed, and stored automatically.'
+                },
+                {
+                  code: `@tracer.trace_agent("diagnosis", risk_tier="high")\nasync def diagnose(state):\n    result = await llm.ainvoke(prompt)\n    \n    # Record safety decision on this span\n    tracer.safety_gate(triggered=False)\n    return result`,
+                  desc: 'Decorate any async function. Clinical metadata is captured per span.'
+                },
+                {
+                  code: `# Export audit trail for EU AI Act / FDA SaMD compliance\nmedtrace export --start 2026-01-01 --end 2026-03-31\n\n# Replay any trace for debugging\nmedtrace replay trace_7f3a9b2c --dry-run\n\n# Check server status\nmedtrace status`,
+                  desc: 'One CLI command generates a NDJSON audit archive with SHA-256 integrity hashes.'
+                }
+              ].map((panel, i) => (
                 <div
-                  key={s.step}
-                  className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-teal-400/30 transition-colors"
+                  key={i}
+                  id={`demo-panel-${i}`}
+                  style={{ display: i === 0 ? 'block' : 'none' }}
+                  className="p-6"
                 >
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="text-xs font-mono text-teal-400 bg-teal-400/10 border border-teal-400/20 px-2 py-1 rounded-md">
-                      {s.step}
-                    </span>
-                    <h3 className="text-sm font-semibold text-white">{s.title}</h3>
-                  </div>
-                  <pre className="bg-[#020c0a]/80 border border-white/10 rounded-xl p-4 text-xs text-teal-300 font-mono overflow-x-auto mb-4 whitespace-pre-wrap">
-{s.code}
+                  <pre className="text-sm text-teal-300 font-mono whitespace-pre-wrap leading-relaxed mb-4 overflow-x-auto">
+{panel.code}
                   </pre>
-                  <p className="text-xs text-white/40 leading-relaxed">{s.description}</p>
+                  <p className="text-xs text-white/40 border-t border-white/10 pt-4">{panel.desc}</p>
                 </div>
               ))}
             </div>
 
-            <div className="mt-8 flex gap-4">
+            <div className="mt-6 flex gap-4">
               <a
                 href="https://github.com/Vilsee/medtrace-sdk"
                 target="_blank"
@@ -233,10 +232,10 @@ export default function DashboardPage() {
                 View on GitHub <ChevronRight className="w-4 h-4" />
               </a>
               <Link
-                href="/traces"
+                href="/replay"
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/10 text-white/60 text-sm hover:bg-white/5 transition-colors"
               >
-                Explore traces →
+                Try replay engine →
               </Link>
             </div>
           </div>

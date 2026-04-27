@@ -131,7 +131,7 @@ export default function ReplayPage() {
 
           <div className="grid grid-cols-2 gap-6 mb-10">
             {/* LEFT — Input panel */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-5">
+            <div className="bg-[#020c0a]/90 border border-teal-400/20 rounded-2xl p-6 space-y-5 backdrop-blur-md">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-white uppercase tracking-widest">Replay Engine</h2>
                 <span className={`text-xs px-2.5 py-1 rounded-full border font-mono uppercase ${STATUS_COLORS[status]}`}>
@@ -219,7 +219,7 @@ export default function ReplayPage() {
             </div>
 
             {/* RIGHT — Output panel */}
-            <div className="bg-[#020c0a]/60 border border-white/10 rounded-2xl p-6 flex flex-col">
+            <div className="bg-[#020c0a]/90 border border-teal-400/15 rounded-2xl p-6 flex flex-col backdrop-blur-md">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Terminal className="w-4 h-4 text-teal-400" />
@@ -284,7 +284,7 @@ export default function ReplayPage() {
                   accent: 'text-emerald-400',
                 },
               ].map((item) => (
-                <div key={item.num} className={`border rounded-2xl p-5 ${item.color}`}>
+                <div key={item.num} className={`border rounded-2xl p-5 backdrop-blur-md bg-[#020c0a]/80 ${item.color}`}>
                   <span className={`text-2xl font-bold ${item.accent} block mb-3`}>{item.num}</span>
                   <h3 className={`font-semibold ${item.accent} mb-2`}>{item.title}</h3>
                   <p className="text-xs text-white/50 leading-relaxed">{item.desc}</p>
