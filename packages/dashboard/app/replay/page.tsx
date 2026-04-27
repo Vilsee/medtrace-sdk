@@ -41,6 +41,8 @@ export default function ReplayPage() {
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [demoMode, setDemoMode] = useState(false)
+  const [demoRunning, setDemoRunning] = useState(false)
+  const [demoLines, setDemoLines] = useState<string[]>([])
 
   const handleLoad = async () => {
     if (!traceId.trim()) return
@@ -75,12 +77,52 @@ export default function ReplayPage() {
     }
   }
 
-  const handleDemo = () => {
+  const handleDemo = async () => {
     setDemoMode(true)
+    setDemoRunning(true)
+    setDemoLines([])
+    setStatus('loading')
+    setOutput(null)
+    setError(null)
+
+    const steps = [
+      '> Loading trace: demo-7f3a9b2c1d...',
+      '> Service: cardiology-agent | Domain: cardiology | Risk: HIGH',
+      '> Reconstructing 3 spans from stored attributes...',
+      '',
+      '  [span 1/3] triage_node',
+      '    agent_type: triage | latency: 312ms',
+      '    phi_scrub_count: 2 | safety_gate: false',
+      '    input_hash: sha256:a4f8e2... ✓',
+      '',
+      '  [span 2/3] diagnosis_node',
+      '    agent_type: diagnostic | latency: 1840ms',
+      '    phi_scrub_count: 1 | safety_gate: TRUE ⚠',
+      '    input_hash: sha256:b7c3d1... ✓',
+      '',
+      '  [span 3/3] report_node',
+      '    agent_type: conversational | latency: 520ms',
+      '    phi_scrub_count: 0 | safety_gate: false',
+      '    input_hash: sha256:e9a2f4... ✓',
+      '',
+      '> PHI check: [PATIENT_NAME] → [PHI_REDACTED]',
+      '> PHI check: [DATE_OF_BIRTH] → [PHI_REDACTED]',
+      '> PHI check: [MRN_12847] → [PHI_REDACTED]',
+      '',
+      '> Integrity verification: PASSED ✓',
+      '> DRY RUN — no LLM calls executed',
+      '> Replay complete in 47ms',
+    ]
+
+    for (let i = 0; i < steps.length; i++) {
+      await new Promise(r => setTimeout(r, 80 + Math.random() * 60))
+      setDemoLines(prev => [...prev, steps[i]])
+    }
+
+    setStatus('success')
+    setDemoRunning(false)
     setTraceData(DEMO_TRACE)
     setOutput(DEMO_OUTPUT)
-    setStatus('success')
-    setError(null)
   }
 
   const handleCopy = () => {
@@ -123,9 +165,13 @@ export default function ReplayPage() {
             </div>
             <button
               onClick={handleDemo}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-teal-400/10 border border-teal-400/20 text-teal-400 text-sm hover:bg-teal-400/20 transition-colors"
+              disabled={demoRunning}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-teal-400/10 border border-teal-400/20 text-teal-400 text-sm hover:bg-teal-400/20 disabled:opacity-50 transition-colors"
             >
-              <Play className="w-3.5 h-3.5" /> Run demo trace
+              {demoRunning
+                ? <><span className="w-3 h-3 rounded-full border-2 border-teal-400 border-t-transparent animate-spin" /> Running...</>
+                : <><Play className="w-3.5 h-3.5" /> Run demo trace</>
+              }
             </button>
           </div>
 
@@ -242,8 +288,29 @@ export default function ReplayPage() {
                 </div>
               )}
 
-              <pre className="flex-1 text-xs font-mono text-teal-300 overflow-auto min-h-[320px] leading-relaxed">
-                {output || (
+              <pre className="flex-1 text-xs font-mono overflow-auto min-h-[320px] leading-relaxed">
+                {demoRunning ? (
+                  <div className="space-y-0.5">
+                    {demoLines.map((line, i) => (
+                      <div
+                        key={i}
+                        className={`${
+                          line.includes('⚠') ? 'text-amber-400' :
+                          line.includes('✓') ? 'text-teal-400' :
+                          line.includes('PHI_REDACTED') ? 'text-red-400' :
+                          line.includes('[span') ? 'text-cyan-300 font-semibold' :
+                          line.startsWith('>') ? 'text-white/80' :
+                          'text-white/50'
+                        }`}
+                      >
+                        {line || '\u00A0'}
+                      </div>
+                    ))}
+                    <div className="text-teal-400 animate-pulse">█</div>
+                  </div>
+                ) : output ? (
+                  <span className="text-teal-300">{output}</span>
+                ) : (
                   <span className="text-white/20 font-mono tracking-widest">
                     WAITING FOR TRANSACTION...
                   </span>

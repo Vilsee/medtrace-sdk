@@ -16,17 +16,56 @@ const TECH_LOGOS = [
 ]
 
 
-function MetricCard({ label, value, icon: Icon, accent }: {
-  label: string; value: string | number; icon: any; accent?: string
+function MetricCard({ label, value, icon: Icon, accent, demo }: {
+  label: string
+  value: string | number
+  icon: any
+  accent?: string
+  demo?: boolean
 }) {
+  const [displayed, setDisplayed] = useState<string | number>(0)
+
+  useEffect(() => {
+    const num = typeof value === 'string' ? parseFloat(value) : value
+    if (isNaN(num) || typeof value === 'string' && value.includes('ms')) {
+      setDisplayed(value)
+      return
+    }
+    let start = 0
+    const end = num
+    if (end === 0) { setDisplayed(0); return }
+    const duration = 1200
+    const step = 16
+    const increment = end / (duration / step)
+    const timer = setInterval(() => {
+      start += increment
+      if (start >= end) { setDisplayed(end.toLocaleString()); clearInterval(timer) }
+      else setDisplayed(Math.floor(start).toLocaleString())
+    }, step)
+    return () => clearInterval(timer)
+  }, [value])
+
   return (
-    <div className="bg-[#020c0a]/80 border border-teal-400/20 rounded-2xl p-6 flex flex-col gap-4 backdrop-blur-md ring-1 ring-white/5">
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white/5">
-        <Icon className={`w-5 h-5 ${accent || 'text-teal-400'}`} />
+    <div className="relative overflow-hidden bg-[#020c0a]/85 border border-teal-900/50 rounded-2xl p-6 flex flex-col gap-4 backdrop-blur-md group hover:border-teal-400/30 transition-all duration-300">
+      {/* Subtle glow on hover */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+        style={{ background: 'radial-gradient(ellipse 60% 50% at 50% 0%, hsl(174 80% 20% / 0.15) 0%, transparent 70%)' }}
+      />
+      <div className="relative flex items-start justify-between">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-teal-950/60 border border-teal-900/40">
+          <Icon className={`w-5 h-5 ${accent || 'text-teal-400'}`} />
+        </div>
+        {demo && (
+          <span className="text-[9px] text-white/20 font-mono tracking-widest border border-white/10 px-1.5 py-0.5 rounded">
+            DEMO
+          </span>
+        )}
       </div>
-      <div>
-        <p className="text-[11px] text-white/40 tracking-widest uppercase mb-1">{label}</p>
-        <p className={`text-3xl font-bold ${accent || 'text-white'}`}>{value}</p>
+      <div className="relative">
+        <p className="text-[11px] text-white/40 tracking-widest uppercase mb-1.5">{label}</p>
+        <p className={`text-3xl font-bold tabular-nums ${accent || 'text-white'}`}>
+          {displayed}
+        </p>
       </div>
     </div>
   )
@@ -107,26 +146,29 @@ export default function DashboardPage() {
         <div className="px-8 py-8">
           {/* Metric grid */}
           <div className="grid grid-cols-3 gap-4 mb-10">
-            <MetricCard label="Total Spans" value={summary?.total_spans ?? 0} icon={Activity} />
-            <MetricCard label="Unique Traces" value={summary?.unique_traces ?? 0} icon={GitBranch} />
+            <MetricCard label="Total Spans" value={summary?.total_spans ?? 12847} icon={Activity} demo={!summary} />
+            <MetricCard label="Unique Traces" value={summary?.unique_traces ?? 3241} icon={GitBranch} demo={!summary} />
             <MetricCard
               label="Safety Gates"
-              value={summary?.safety_gates_triggered ?? 0}
+              value={summary?.safety_gates_triggered ?? 143}
               icon={Shield}
-              accent={(summary?.safety_gates_triggered ?? 0) > 0 ? 'text-amber-400' : 'text-teal-400'}
+              accent={(summary?.safety_gates_triggered ?? 143) > 0 ? 'text-amber-400' : 'text-teal-400'}
+              demo={!summary}
             />
             <MetricCard
               label="High Risk Spans"
-              value={summary?.high_risk_spans ?? 0}
+              value={summary?.high_risk_spans ?? 28}
               icon={AlertTriangle}
-              accent={(summary?.high_risk_spans ?? 0) > 0 ? 'text-red-400' : 'text-teal-400'}
+              accent={(summary?.high_risk_spans ?? 28) > 0 ? 'text-orange-400' : 'text-teal-400'}
+              demo={!summary}
             />
-            <MetricCard label="PHI Scrubs" value={summary?.phi_scrubs_total ?? 0} icon={Lock} />
+            <MetricCard label="PHI Scrubs" value={summary?.phi_scrubs_total ?? 9302} icon={Lock} demo={!summary} />
             <MetricCard
               label="Avg Latency"
-              value={summary ? `${Math.round(summary.avg_latency_ms)}ms` : '0ms'}
+              value={summary ? `${Math.round(summary.avg_latency_ms)}ms` : '284ms'}
               icon={Zap}
               accent="text-cyan-400"
+              demo={!summary}
             />
           </div>
 
